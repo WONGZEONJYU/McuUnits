@@ -6,7 +6,7 @@
 #include <xhelper.hpp>
 #include <sstream>
 
-#ifdef FREERTOS_CONFIG_H
+#if defined(FREERTOS) || defined(USE_FREERTOS)
 
 class Task_CRITICAL final {
     X_DISABLE_COPY_MOVE(Task_CRITICAL)

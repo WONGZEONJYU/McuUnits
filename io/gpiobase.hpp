@@ -17,7 +17,7 @@ public:
 protected:
     constexpr GPIOBase() = default;
     void swap(GPIOBase &) noexcept;
-    void copy(const GPIOBase &) noexcept;
+    void copy(GPIOBase const &) noexcept;
 };
 
 #endif
