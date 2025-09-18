@@ -26,7 +26,7 @@ class ISRCriticalArea final {
     W_DISABLE_COPY_MOVE(ISRCriticalArea)
     std::atomic_uint32_t m_save_{};
 public:
-    constexpr ISRCriticalArea();
+    constexpr ISRCriticalArea() noexcept;
     constexpr ~ISRCriticalArea();
 };
 
