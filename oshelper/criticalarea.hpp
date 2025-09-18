@@ -11,9 +11,9 @@ class TaskCriticalArea final {
     W_DISABLE_COPY(TaskCriticalArea)
     mutable std::atomic_int_fast32_t m_count_{};
 public:
-    constexpr explicit TaskCriticalArea() noexcept;
-    constexpr explicit TaskCriticalArea(std::defer_lock_t) noexcept;
-    constexpr ~TaskCriticalArea();
+    explicit TaskCriticalArea() noexcept;
+    explicit TaskCriticalArea(std::defer_lock_t);
+    ~TaskCriticalArea();
     TaskCriticalArea(TaskCriticalArea &&) noexcept;
     TaskCriticalArea &operator=(TaskCriticalArea &&) noexcept;
     void enter() const noexcept;
@@ -26,8 +26,8 @@ class ISRCriticalArea final {
     W_DISABLE_COPY_MOVE(ISRCriticalArea)
     std::atomic_uint32_t m_save_{};
 public:
-    constexpr ISRCriticalArea() noexcept;
-    constexpr ~ISRCriticalArea();
+    ISRCriticalArea() noexcept;
+    ~ISRCriticalArea();
 };
 
 #endif
