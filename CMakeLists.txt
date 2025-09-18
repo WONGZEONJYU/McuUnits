@@ -1,5 +1,5 @@
 # 创建Unit静态库
-set(LIBName Unit)
+set(LIBName Units)
 
 # 自动收集所有子目录的源文件和头文件
 file(GLOB_RECURSE UNIT_SOURCES 
