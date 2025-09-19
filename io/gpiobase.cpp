@@ -1,5 +1,14 @@
 #include <gpiobase.hpp>
-#include <utility>
+
+void GPIOBase::setMode(GPIOMode) const {}
+
+void GPIOBase::setPull(GPIOPull) const {}
+
+GPIOMode GPIOBase::mode() const
+{ return GPIOMode::UNKNOWN; }
+
+GPIOPull GPIOBase::pull() const
+{ return GPIOPull::UNKNOWN; }
 
 GPIOBase::GPIOBase(void * const port, uint32_t const pin)
 :m_port_(port),m_pin_(pin){}
