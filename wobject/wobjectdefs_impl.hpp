@@ -6,7 +6,7 @@
 
 #include <wglobal.hpp>
 
-class wobject;
+class WObject;
 
 namespace WPrivate
 {
@@ -343,7 +343,7 @@ namespace WPrivate
         // don't use virtual functions here; we don't want the
         // compiler to create tons of per-polymorphic-class stuff that
         // we'll never need. We just use one function pointer.
-        typedef void (*ImplFn)(int which, WSlotObjectBase* this_, wobject *receiver, void **args, bool *ret);
+        typedef void (*ImplFn)(int which, WSlotObjectBase* this_, WObject *receiver, void **args, bool *ret);
         const ImplFn m_impl;
     protected:
         enum Operation {
@@ -360,7 +360,7 @@ namespace WPrivate
         inline void destroyIfLastRef() noexcept
         { if (!(--m_ref)) m_impl(Destroy, this, nullptr, nullptr, nullptr); }
         inline bool compare(void **a) { bool ret = false; m_impl(Compare, this, nullptr, a, &ret); return ret; }
-        inline void call(wobject *r, void **a)  { m_impl(Call,    this, r, a, nullptr); }
+        inline void call(WObject *r, void **a)  { m_impl(Call,    this, r, a, nullptr); }
     protected:
         ~WSlotObjectBase() {}
     private:
@@ -373,7 +373,7 @@ namespace WPrivate
     {
         typedef WPrivate::FunctionPointer<Func> FuncType;
         Func function;
-        static void impl(int which, WSlotObjectBase *this_, wobject *r, void **a, bool *ret)
+        static void impl(int which, WSlotObjectBase *this_, WObject *r, void **a, bool *ret)
         {
             switch (which) {
             case Destroy:
@@ -398,7 +398,7 @@ namespace WPrivate
     {
         typedef WPrivate::Functor<Func, N> FuncType;
         Func function;
-        static void impl(int which, WSlotObjectBase *this_, wobject *r, void **a, bool *ret)
+        static void impl(int which, WSlotObjectBase *this_, WObject *r, void **a, bool *ret)
         {
             switch (which) {
             case Destroy:
@@ -420,7 +420,7 @@ namespace WPrivate
     {
         typedef FunctionPointer<Func> FuncType;
         Func function;
-        static void impl(int which, WSlotObjectBase *this_, wobject *r, void **a, bool *ret)
+        static void impl(int which, WSlotObjectBase *this_, WObject *r, void **a, bool *ret)
         {
             switch (which) {
             case Destroy:

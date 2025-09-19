@@ -1,5 +1,5 @@
-#ifndef WNAMESPACE_H
-#define WNAMESPACE_H
+#ifndef W_NAMESPACE_H
+#define W_NAMESPACE_H 1
 
 struct WMetaObject;
 

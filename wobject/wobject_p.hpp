@@ -1,12 +1,12 @@
 #ifndef WOBJECT_P_H
 #define WOBJECT_P_H
 
-#include "wglobal.hpp"
-#include "wobject.hpp"
+#include <wglobal.hpp>
+#include <wobject.hpp>
 
 class WObjectPrivate : public WObjectData
 {
-    W_DECLARE_PUBLIC(wobject)
+    W_DECLARE_PUBLIC(WObject)
 public:
     struct ConnectionData;
     struct Connection
@@ -17,7 +17,7 @@ public:
         Connection ** prev;
         Connection * nextConnectionList{};
         Connection *prevConnectionList;
-        wobject *sender ,*receiver;
+        WObject *sender ,*receiver;
         void *sendPtr,*slotPtr;
         WPrivate::WSlotObjectBase *slotObj;
         //ConnectionData * owr;
@@ -48,7 +48,7 @@ public:
 
     struct Sender
     {
-        Sender(wobject *receiver, wobject *sender):
+        Sender(WObject *receiver, WObject *sender):
                 receiver(receiver),sender(sender){
             if (receiver){
                 ConnectionData * cd = &(receiver->d_func()->connections);
@@ -72,7 +72,7 @@ public:
             }
         }
         Sender *previous;
-        wobject *receiver,*sender;
+        WObject *receiver,*sender;
     };
 
     struct ConnectionList
@@ -108,13 +108,13 @@ public:
 
         void removeConnection(Connection * c);
 
-        void cleanOrphanedConnections(wobject *sender)
+        void cleanOrphanedConnections(WObject *sender)
         {
             if ((orphaned) && (1 == static_cast<const int >(ref))){
                 cleanOrphanedConnectionsImpl(sender);
             }
         }
-        void cleanOrphanedConnectionsImpl(wobject *sender);
+        void cleanOrphanedConnectionsImpl(WObject *sender);
 
         ulBase_Type signalVectorCount() const{
             return signalVector.connectionsForSignal.Count;
@@ -129,10 +129,10 @@ public:
     bool isSignalConnected(void *, bool checkDeclarative = true) const;
     bool maybeSignalConnected(uiBase_Type = 0) const;
 
-    static inline WObjectPrivate *get(wobject *o){return o->d_func();}
-    static inline const WObjectPrivate *get(const wobject *o){return o->d_func();}
-    static bool connectImpl(const wobject *sender,void ** signal,
-                            const wobject *receiver,void ** slot,
+    static inline WObjectPrivate *get(WObject *o){return o->d_func();}
+    static inline const WObjectPrivate *get(const WObject *o){return o->d_func();}
+    static bool connectImpl(const WObject *sender,void ** signal,
+                            const WObject *receiver,void ** slot,
                             WPrivate::WSlotObjectBase * slotObj,
                             int type);
     static bool disconnect(Connection *c);

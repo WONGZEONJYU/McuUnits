@@ -1,38 +1,30 @@
-#include "wobject.hpp"
-#include "wobject_p.hpp"
-#include "wmetaobject_p.hpp"
+#include <wobject.hpp>
+#include <wobject_p.hpp>
+#include <wmetaobject_p.hpp>
+#include <wmetaobject.hpp>
 
 //🐞🐞🐞
 
-wobject::wobject() noexcept :wobject(*new WObjectPrivate)
-{
-}
+WObject::WObject() noexcept :WObject(*new WObjectPrivate{})
+{}
 
-wobject::wobject(WObjectPrivate& dd):
-    d_ptr(&dd)
-{
-    d_ptr->q_ptr = this;
-}
+WObject::WObject(WObjectPrivate& dd):d_ptr(&dd)
+{ d_ptr->q_ptr = this; }
 
-WObjectPrivate::WObjectPrivate():connections{}
-{
-    blockSig = false;
-    q_ptr = nullptr;
-}
+WObjectPrivate::WObjectPrivate()
+{ blockSig = false;q_ptr = nullptr; }
 
-bool wobject::blockSignals(const bool block) noexcept
-{
+bool WObject::blockSignals(const bool block) noexcept {
     W_D(WObject);
-    bool previous = d->blockSig;
+    auto const previous {d->blockSig};
     d->blockSig = block;
     return previous;
 }
 
-wobject * wobject::sender() const
-{
+WObject * WObject::sender() const {
     W_D(const WObject);
 
-    WObjectPrivate::ConnectionData *cd {
+    WObjectPrivate::ConnectionData * cd {
             const_cast<WObjectPrivate::ConnectionData *>(&(d->connections))
     };
 
@@ -47,7 +39,7 @@ wobject * wobject::sender() const
     return nullptr;
 }
 
-bool wobject::isSignalConnected(void * signal) const
+bool WObject::isSignalConnected(void * signal) const
 {
     W_D(const WObject);
     if (!signal)
@@ -60,8 +52,8 @@ void * WMetaMethod::fromSignalImpl(void ** signal)
     return *signal;
 }
 
-bool wobject::connectImpl(const wobject *sender, void ** signal,
-                        const wobject *receiver, void ** slotPtr,
+bool WObject::connectImpl(const WObject *sender, void ** signal,
+                        const WObject *receiver, void ** slotPtr,
                          WPrivate::WSlotObjectBase * slotObj,
                           WT::ConnectionType type)
 {
@@ -74,8 +66,8 @@ bool wobject::connectImpl(const wobject *sender, void ** signal,
     return WObjectPrivate::connectImpl(sender,signal,receiver,slotPtr,slotObj,type);
 }
 
-bool wobject::disconnectImpl(const wobject *sender,void ** signal,
-                             const wobject *receiver,void **slot)
+bool WObject::disconnectImpl(const WObject *sender,void ** signal,
+                             const WObject *receiver,void **slot)
 {
 
     if (sender == nullptr || (receiver == nullptr && slot != nullptr)) {
@@ -84,14 +76,14 @@ bool wobject::disconnectImpl(const wobject *sender,void ** signal,
     return WMetaObjectPrivate::disconnect(sender,signal,receiver,slot);
 }
 
-bool WMetaObjectPrivate::disconnect(const wobject *sender, void **signal,
-                                    const wobject *receiver, void **slot)
+bool WMetaObjectPrivate::disconnect(const WObject *sender, void **signal,
+                                    const WObject *receiver, void **slot)
 {
     if (!sender){
         return false;
     }
 
-    wobject *s = const_cast<wobject *>(sender);
+    WObject *s = const_cast<WObject *>(sender);
 
     WObjectPrivate::ConnectionData *scd = &(WObjectPrivate::get(s)->connections);
     if (!scd)
@@ -116,14 +108,14 @@ bool WMetaObjectPrivate::disconnect(const wobject *sender, void **signal,
 }
 
 bool WMetaObjectPrivate::disconnectHelper(WObjectPrivate::ConnectionData *connections, void **signal,
-                                          const wobject *receiver, void **slot)
+                                          const WObject *receiver, void **slot)
 {
     bool success = false;
     auto &connectionList = connections->signalVector.connectionsForSignal;
     auto *c = connectionList.first;
 
     while (c){
-        wobject *r = c->receiver;
+        WObject *r = c->receiver;
 
         if (r && (receiver == nullptr || ( r == receiver && ( signal || ( !c->isSlotObject) )
                  && ( slot == nullptr || ( c->isSlotObject && c->slotObj->compare(slot) ) ) ) ) ){
@@ -143,7 +135,7 @@ bool WObjectPrivate::disconnect(WObjectPrivate::Connection *c)
     if (!c){
         return false;
     }
-    wobject *receiver = c->receiver;
+    WObject *receiver = c->receiver;
     if (!receiver){
         return false;
     }
@@ -161,8 +153,8 @@ bool WObjectPrivate::disconnect(WObjectPrivate::Connection *c)
     return true;
 }
 
-bool WObjectPrivate::connectImpl(const wobject *sender,void ** signal,
-                                 const wobject *receiver, void ** slot,
+bool WObjectPrivate::connectImpl(const WObject *sender,void ** signal,
+                                 const WObject *receiver, void ** slot,
                                 WPrivate::WSlotObjectBase * slotObj,
                                  int type)
 {
@@ -171,8 +163,8 @@ bool WObjectPrivate::connectImpl(const wobject *sender,void ** signal,
         return false;
     }
 
-    auto * s = const_cast<wobject*>(sender);
-    auto * r = const_cast<wobject*>(receiver);
+    auto * s = const_cast<WObject*>(sender);
+    auto * r = const_cast<WObject*>(receiver);
 
     if (type & WT::UniqueConnection && slot && (&(WObjectPrivate::get(s)->connections))) {
 
@@ -268,7 +260,7 @@ void WObjectPrivate::ConnectionData::removeConnection(Connection *c)
     orphaned = c;
 }
 
-void WObjectPrivate::ConnectionData::cleanOrphanedConnectionsImpl(wobject *sender)
+void WObjectPrivate::ConnectionData::cleanOrphanedConnectionsImpl(WObject *sender)
 {
     (void) sender;
     if (static_cast<const int >(ref) > 1){
@@ -359,7 +351,7 @@ private:
     WPrivate::WSlotObjectBase *m_slotObject = nullptr;
 };
 
-inline void doActivate(wobject *sender, void ** signalPtr, void **argv)
+inline void doActivate(WObject *sender, void ** signalPtr, void **argv)
 {
     WObjectPrivate * sp = WObjectPrivate::get(sender);
 
@@ -387,7 +379,7 @@ inline void doActivate(wobject *sender, void ** signalPtr, void **argv)
             }
 
             do {
-                wobject * const receiver = c->receiver;
+                WObject * const receiver = c->receiver;
                 if (!receiver)
                     continue;
 
@@ -414,14 +406,14 @@ inline void doActivate(wobject *sender, void ** signalPtr, void **argv)
     }
 }
 
-void WMetaObject::activate(wobject * sender,
+void WMetaObject::activate(WObject * sender,
                            void ** signalPtr,
                            void ** argv)
 {
     doActivate(sender,signalPtr,argv);
 }
 
-wobject::~wobject()
+WObject::~WObject()
 {
     W_D(WObject);
 
@@ -445,7 +437,7 @@ wobject::~wobject()
 
     while (WObjectPrivate::Connection *node = cd->senders) {
         W_ASSERT(node->receiver);
-        wobject *sender = node->sender;
+        WObject *sender = node->sender;
         WObjectPrivate::ConnectionData *senderData = &(sender->d_func()->connections);
         W_ASSERT(senderData);
         WPrivate::WSlotObjectBase *slotObj = nullptr;

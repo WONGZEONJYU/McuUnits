@@ -10,7 +10,7 @@
 //#define DebunceTime     10      /*消抖时间(10ms)，大于单位时间消抖*/
 //#define DoubleClickNum  2       /*连按次数(2c)，单位时间内需按下的次数，2为双击*/
 
-class Button final :public wobject {
+class Button final :public WObject {
     W_DISABLE_COPY_MOVE(Button)
 
     inline static std::list<Button *> m_button_list {};

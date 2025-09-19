@@ -1,23 +1,15 @@
-#ifndef QMETAOBJECT_H
-#define QMETAOBJECT_H
+#ifndef W_METAOBJECT_H
+#define W_METAOBJECT_H 1
 
-#include "wobjectdefs.hpp"
-
-struct WMetaMethod
-{
+struct WMetaMethod {
     template <typename PointerToMemberFunction>
-    static inline void *fromSignal(PointerToMemberFunction signal)
-    {
-        typedef WPrivate::FunctionPointer<PointerToMemberFunction> SignalType;
-        return fromSignalImpl(reinterpret_cast<void **>(&signal));
-    }
+    static void *fromSignal(PointerToMemberFunction signal)
+    { return fromSignalImpl(reinterpret_cast<void **>(&signal)); }
 
 private:
     static void *fromSignalImpl(void **);
-
-    friend class wobject;
+    friend class WObject;
     friend struct WMetaObject;
 };
 
 #endif
-

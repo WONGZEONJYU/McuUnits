@@ -1,39 +1,35 @@
 #pragma once
-#ifndef _W_OBJECT_H
-#define _W_OBJECT_H
+#ifndef W_OBJECT_HPP
+#define W_OBJECT_HPP 1
 
-#include "wobjectdefs.hpp"
-#include "wmetaobject.hpp"
-#include "wglobal.hpp"
+#include <wobjectdefs.hpp>
+#include <wglobal.hpp>
 #include <memory>
 
 struct WMetaObject;
 class WObjectPrivate;
-class wobject;
+class WObject;
 
-class WObjectData
-{
+class WObjectData {
     W_DISABLE_COPY(WObjectData)
 public:
     WObjectData() = default;
     virtual ~WObjectData() = 0;
-    wobject *q_ptr;
+    WObject *q_ptr;
     uBase_Type blockSig:1;
 };
 
-class wobject
-{
+class WObject {
     W_DECLARE_PRIVATE(WObject)
-
 public:
-    explicit wobject() noexcept;
-    virtual ~wobject();
+    explicit WObject() noexcept;
+    virtual ~WObject();
 
-    inline bool signalsBlocked() const noexcept{return d_ptr->blockSig;}
-    bool blockSignals(const bool block) noexcept;
+    [[nodiscard]] bool signalsBlocked() const noexcept{return d_ptr->blockSig;}
+    bool blockSignals(bool block) noexcept;
 
     template <typename Func1, typename Func2>
-        static inline bool connect(const typename WPrivate::FunctionPointer<Func1>::Object *sender, Func1 signal,
+        static bool connect(const typename WPrivate::FunctionPointer<Func1>::Object *sender, Func1 signal,
                                          const typename WPrivate::FunctionPointer<Func2>::Object *receiver, Func2 slot,
                                          WT::ConnectionType type = WT::DirectConnection)
         {
@@ -69,7 +65,7 @@ public:
         template <typename Func1, typename Func2>
         static inline typename std::enable_if<int(WPrivate::FunctionPointer<Func2>::ArgumentCount) >= 0 &&
                             !WPrivate::FunctionPointer<Func2>::IsPointerToMemberFunction,bool>::type
-                connect(const typename WPrivate::FunctionPointer<Func1>::Object *sender, Func1 signal, const wobject *context, Func2 slot,
+                connect(const typename WPrivate::FunctionPointer<Func1>::Object *sender, Func1 signal, const WObject *context, Func2 slot,
                         WT::ConnectionType type = WT::DirectConnection)
         {
             typedef WPrivate::FunctionPointer<Func1> SignalType;
@@ -100,7 +96,7 @@ public:
         //connect to a functor, with a "context" object defining in which event loop is going to be executed
         template <typename Func1, typename Func2>
         static inline typename std::enable_if<WPrivate::FunctionPointer<Func2>::ArgumentCount == -1,bool>::type
-                connect(const typename WPrivate::FunctionPointer<Func1>::Object *sender, Func1 signal, const wobject *context, Func2 slot,
+                connect(const typename WPrivate::FunctionPointer<Func1>::Object *sender, Func1 signal, const WObject *context, Func2 slot,
                         WT::ConnectionType type = WT::DirectConnection)
         {
             typedef WPrivate::FunctionPointer<Func1> SignalType;
@@ -140,7 +136,7 @@ public:
 
         template <typename Func1>
         static inline bool disconnect(const typename WPrivate::FunctionPointer<Func1>::Object *sender, Func1 signal,
-                                      const wobject *receiver, void **zero)
+                                      const WObject *receiver, void **zero)
         {
             // This is the overload for when one wish to disconnect a signal from any slot. (slot=nullptr)
             // Since the function template parameter cannot be deduced from '0', we use a
@@ -151,28 +147,23 @@ public:
         }
 
 protected:
-    wobject * sender() const;
+    [[nodiscard]] WObject * sender() const;
     bool isSignalConnected(void * signal) const;
-protected:
-    explicit wobject(WObjectPrivate &dd);
-
-protected:
+    explicit WObject(WObjectPrivate &dd);
     std::unique_ptr<WObjectData> d_ptr;
     friend struct WMetaObject;
-    friend struct WObjectData;
+    friend class  WObjectData;
 
 private:
-    W_DISABLE_COPY(wobject)
+    W_DISABLE_COPY(WObject)
 
-private:
-
-    static bool connectImpl(const wobject *sender, void ** signal,
-                            const wobject *receiver, void ** slot,
+    static bool connectImpl(const WObject *sender, void ** signal,
+                            const WObject *receiver, void ** slot,
                              WPrivate::WSlotObjectBase * slotObj,WT::ConnectionType type);
 
-    static bool disconnectImpl(const wobject *sender,
+    static bool disconnectImpl(const WObject *sender,
                                void ** signal,
-                               const wobject *receiver,
+                               const WObject *receiver,
                                void ** slot);
 };
 
