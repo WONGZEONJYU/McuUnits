@@ -1,10 +1,13 @@
 #include <gpiobase.hpp>
 #include <utility>
 
+GPIOBase::GPIOBase(void * const port, uint32_t const pin)
+:m_port_(port),m_pin_(pin){}
+
 void GPIOBase::swap(GPIOBase & o) noexcept {
     std::swap(m_port_, o.m_port_);
-    std::swap(m_gpio_, o.m_gpio_);
+    std::swap(m_pin_, o.m_pin_);
 }
 
 void GPIOBase::copy(GPIOBase const & o) noexcept
-{ m_port_ = o.m_port_; m_gpio_ = o.m_gpio_; }
+{ m_port_ = o.m_port_; m_pin_ = o.m_pin_; }

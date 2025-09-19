@@ -1,11 +1,13 @@
 #ifndef GPIO_BASE_HPP
 #define GPIO_BASE_HPP 1
 
+#include <xmemory.hpp>
+
 class GPIOBase {
 
 protected:
     void * m_port_{};
-    long unsigned int m_gpio_{};
+    long unsigned int m_pin_{};
 public:
     virtual ~GPIOBase() = default;
     virtual void set() const = 0;
@@ -15,7 +17,7 @@ public:
     [[nodiscard]] virtual bool read() const = 0;
 
 protected:
-    constexpr GPIOBase() = default;
+    explicit GPIOBase(void * = {},uint32_t = {});
     void swap(GPIOBase &) noexcept;
     void copy(GPIOBase const &) noexcept;
 };
