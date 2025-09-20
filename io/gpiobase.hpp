@@ -39,6 +39,7 @@ public:
     [[nodiscard]] virtual GPIOOutPutType outputType() const;
     virtual void setSpeed(GPIOSpeed) const;
     [[nodiscard]] virtual GPIOSpeed speed() const;
+    void setGPIO(void *,uint32_t) noexcept;
 
 protected:
     explicit GPIOBase(void * = {},uint32_t = {});

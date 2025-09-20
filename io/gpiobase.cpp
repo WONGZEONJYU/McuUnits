@@ -36,3 +36,6 @@ void GPIOBase::setSpeed(GPIOSpeed) const {}
 
 GPIOSpeed GPIOBase::speed() const
 { return GPIOSpeed::UNKNOWN; }
+
+void GPIOBase::setGPIO(void * const port, uint32_t const pin) noexcept
+{ m_port_ = port; m_pin_ = pin; }
