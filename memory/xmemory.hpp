@@ -1,8 +1,11 @@
 #ifndef XMEMORY_HPP
 #define XMEMORY_HPP 1
 
-#include <xthread.hpp>
 #include <mutex>
+#include <xhelper.hpp>
+#if defined(FREERTOS) || defined(USE_FREERTOS)
+#include <FreeRTOS.h>
+#endif
 
 inline namespace mem {
 
@@ -28,20 +31,21 @@ inline namespace mem {
         template<typename Other>
         constexpr XAllocator(XAllocator<Other> const &) {}
 
-    #if defined(FREERTOS) || defined(USE_FREERTOS) || configSUPPORT_DYNAMIC_ALLOCATION > 0
+#if (defined(FREERTOS) || defined(USE_FREERTOS)) && defined(configSUPPORT_DYNAMIC_ALLOCATION)
+    #if configSUPPORT_DYNAMIC_ALLOCATION > 0
         static constexpr value_type * allocate(std::size_t const count) noexcept
         { return static_cast<value_type*>( pvPortMalloc(count * sizeof(value_type)) ); }
 
         static constexpr void deallocate(value_type * const p, size_t) noexcept
         { vPortFree(p); }
-
-    #else
+    #endif
+#else
         static value_type * allocate(std::size_t const count) noexcept
         { return static_cast<value_type*>( malloc(count * sizeof(value_type)) ); }
 
         static void deallocate(value_type * const p,size_t) noexcept
         { free(p); }
-    #endif
+#endif
         friend bool operator==(const XAllocator &, const XAllocator &) noexcept
         { return true; }
         friend bool operator!=(const XAllocator &, const XAllocator &) noexcept
@@ -65,11 +69,13 @@ inline namespace mem {
         static constexpr void cleanup(value_type * const pointer) noexcept {
             static_assert(sizeof(value_type) > static_cast<std::size_t>(0)
                 ,"value_type must be a complete type!");
-    #if defined(FREERTOS) || defined(USE_FREERTOS) || configSUPPORT_DYNAMIC_ALLOCATION > 0
+#if (defined(FREERTOS) || defined(USE_FREERTOS)) && defined(configSUPPORT_DYNAMIC_ALLOCATION)
+    #if configSUPPORT_DYNAMIC_ALLOCATION > 0
             vPortFree(pointer);
-    #else
-            free(pointer);
     #endif
+#else
+            free(pointer);
+#endif
         }
 
         constexpr void operator()(value_type * const pointer) const noexcept
@@ -83,7 +89,7 @@ inline namespace mem {
         template<typename > friend struct XDeleter;
 
         template<typename U>
-        void copy_(U const & o) noexcept
+        constexpr void copy_(U const & o) noexcept
         { m_length.store(o.m_length.load(std::memory_order_relaxed),std::memory_order_relaxed); }
 
     public:
@@ -118,11 +124,13 @@ inline namespace mem {
             static_assert(sizeof(type) > static_cast<std::size_t>(0)
                 ,"can't delete pointer to incomplete type!");
 
-    #if defined(FREERTOS) || defined(USE_FREERTOS) || configSUPPORT_DYNAMIC_ALLOCATION > 0
+#if (defined(FREERTOS) || defined(USE_FREERTOS)) && defined(configSUPPORT_DYNAMIC_ALLOCATION)
+    #if configSUPPORT_DYNAMIC_ALLOCATION > 0
             vPortFree(pointer);
-    #else
-            free(pointer);
     #endif
+#else
+            free(pointer);
+#endif
         }
 
         template<typename Up_> requires std::is_constructible_v<Up_(*)[],Tp_(*)[]>
@@ -143,7 +151,7 @@ inline namespace mem {
     using XSharedPtr = std::shared_ptr<Tp_>;
 
     template<typename T,typename ...Args> requires (std::extent_v<T> > 0)
-    void makeUnique(Args && ...) noexcept = delete;
+    constexpr void makeUnique(Args && ...) noexcept = delete;
 
     template<typename Tp_,typename ...Args,typename Ret = XUniquePtr<Tp_>>
     requires ( std::negation_v< std::is_array<Tp_> > )
