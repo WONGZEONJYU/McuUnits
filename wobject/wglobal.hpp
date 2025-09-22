@@ -16,10 +16,10 @@
     W_DISABLE_COPY(Class)           \
     W_DISABLE_MOVE(Class)
 
-template <typename T> T *wGetPtrHelper(T *ptr) noexcept { return ptr; }
-template <typename Ptr> auto wGetPtrHelper(Ptr &ptr) noexcept -> decltype(ptr.get())
+template <typename T> T * wGetPtrHelper(T * const ptr) noexcept { return ptr; }
+template <typename Ptr> auto wGetPtrHelper(Ptr & ptr) noexcept -> decltype(ptr.get())
 { static_assert(noexcept(ptr.get()), "Smart d pointers for X_DECLARE_PRIVATE must have noexcept get()"); return ptr.get(); }
-template <typename Ptr> auto wGetPtrHelper(Ptr const &ptr) noexcept -> decltype(ptr.get())
+template <typename Ptr> auto wGetPtrHelper(Ptr const & ptr) noexcept -> decltype(ptr.get())
 { static_assert(noexcept(ptr.get()), "Smart d pointers for X_DECLARE_PRIVATE must have noexcept get()"); return ptr.get(); }
 
 #define W_DECLARE_PRIVATE(Class) \
