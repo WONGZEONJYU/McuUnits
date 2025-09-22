@@ -3,10 +3,10 @@
 
 #include <xthread.hpp>
 
-class XTask_base {
-    X_DISABLE_COPY_MOVE(XTask_base)
-    XThread_Dynamic m_th_;
-    std::atomic<XTask_base*> m_next_{};
+class XTaskBase {
+    X_DISABLE_COPY_MOVE(XTaskBase)
+    XThreadDynamic m_th_;
+    std::atomic<XTaskBase*> m_next_{};
 protected:
     std::atomic_bool m_is_exit_{};
 public:
@@ -16,7 +16,7 @@ public:
 
     void Set_Priority(const uint32_t &p) const noexcept;
 
-    void set_next( XTask_base * const next) noexcept
+    void set_next( XTaskBase * const next) noexcept
     { m_next_ = next; }
 
     virtual void Next(void * const arg) noexcept {
@@ -27,9 +27,9 @@ public:
 
     virtual void Do(void * const arg) {}
 
-    virtual ~XTask_base();
+    virtual ~XTaskBase();
 protected:
-    explicit XTask_base() = default;
+    explicit XTaskBase() = default;
 
 private:
     virtual void Main() = 0;
