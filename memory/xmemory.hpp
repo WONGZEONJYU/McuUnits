@@ -464,11 +464,14 @@ inline namespace mem {
             }
         }
 
-        constexpr void operator delete(void * const ptr, std::size_t const length = 1) noexcept {
+        constexpr void operator delete(void * const ptr, std::size_t const length ) noexcept {
             if (ptr) {
                 std::allocator_traits<Allocator>::deallocate(sm_allocator_,static_cast<Object *>(ptr),length);
             }
         }
+
+        constexpr void operator delete(void * const ptr) noexcept
+        { operator delete(ptr,1); }
 
         template<typename ...Args1,typename ...Args2>
         [[nodiscard]]
