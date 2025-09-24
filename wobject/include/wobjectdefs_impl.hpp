@@ -351,7 +351,7 @@ namespace WPrivate {
     // Args and R are the List of arguments and the return type of the signal to which the slot is connected.
     template<typename Func, typename Args, typename R> class WSlotObject : public WSlotObjectBase {
         using FuncType = FunctionPointer<Func> ;
-        Func const function{};
+        Func function{};
         static void impl(int const which, WSlotObjectBase * const this_, WObject * const r, void ** const a, bool * const ret) {
             switch (which) {
             case Destroy:
@@ -396,7 +396,7 @@ namespace WPrivate {
 
     template<typename Func, typename Args, typename R> class WStaticSlotObject : public WSlotObjectBase {
         using FuncType = FunctionPointer<Func> ;
-        Func const function{};
+        Func function{};
         static void impl(int const which, WSlotObjectBase *this_, WObject *r, void **a, bool *) {
             switch (which) {
             case Destroy:
