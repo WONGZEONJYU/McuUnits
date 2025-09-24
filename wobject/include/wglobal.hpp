@@ -1,7 +1,5 @@
-#ifndef W_GLOBAL_H
-#define W_GLOBAL_H
-
-#include <memory>
+#ifndef W_GLOBAL_HPP
+#define W_GLOBAL_HPP 1
 
 /********************************************************信号槽部分，请勿乱用*********************************************/
 #define W_DISABLE_COPY(Class) \
@@ -66,7 +64,7 @@ typedef unsigned long long ullBase_Type;
 
 #define W_UNUSED(x) (void )x
 
-#define w_assert() (reinterpret_cast<void (*)()>(0))()
+#define w_assert() abort()
 
 #define W_ASSERT(cond) ((cond) ? static_cast<void>(0) : w_assert())
 

@@ -165,6 +165,8 @@ inline namespace XContainer {
 
     using XStringVector = XVector<XString>;
 
+    using XStringList = XList<XString>;
+
     template<typename Con_>
     constexpr auto sliced(Con_ const & c ,std::size_t const s,std::size_t const e) noexcept -> Con_ {
         if (s >= c.size() ) { return {}; }

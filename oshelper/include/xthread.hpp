@@ -1,4 +1,4 @@
-#ifndef  X_THREAD_HPP
+#ifndef X_THREAD_HPP
 #define X_THREAD_HPP
 
 #include <xthreadbase.hpp>
