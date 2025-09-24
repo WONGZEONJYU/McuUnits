@@ -12,6 +12,12 @@ void XThreadBase::sleep_for(std::size_t const ms) noexcept
 void XThreadBase::sleep_until(std::size_t & pre,std::size_t const ms) noexcept
 { vTaskDelayUntil(reinterpret_cast<TickType_t*>(&pre),ms); }
 
+void XThreadBase::yield() noexcept
+{ taskYIELD();}
+
+bool XThreadBase::isRunningInThread() noexcept
+{ return !static_cast<bool>(xPortIsInsideInterrupt()); }
+
 std::size_t XThreadBase::thread_count() noexcept
 { return m_th_cnt_.load(std::memory_order_relaxed); }
 

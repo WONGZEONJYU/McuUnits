@@ -16,7 +16,7 @@ public:
 
     template<typename ...Args_>
     explicit XThreadDynamic(std::size_t const stack_depth,Args_ && ...args) noexcept
-    { start_(stack_depth,{},{},std::forward<Args_>(args)...); }
+    { create_(stack_depth,{},{},std::forward<Args_>(args)...); }
 
     XThreadDynamic(XThreadDynamic && ) noexcept;
 
@@ -41,7 +41,7 @@ public:
 
     template<typename ...Args_>
     explicit XThreadStatic(Args_ && ...args) noexcept
-    { start_(DEPTH,m_stack_.data(),std::addressof(m_tcb_),std::forward<Args_>(args)...); }
+    { create_(DEPTH,m_stack_.data(),std::addressof(m_tcb_),std::forward<Args_>(args)...); }
 
     XThreadStatic(XThreadStatic && o) noexcept
     { swap(o); }

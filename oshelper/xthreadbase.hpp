@@ -20,6 +20,8 @@ public:
     void setPriority(uint32_t) const noexcept;
     static void sleep_for(std::size_t) noexcept;
     static void sleep_until(std::size_t & ,std::size_t) noexcept;
+    static void yield() noexcept;
+    static bool isRunningInThread() noexcept;
 
 protected:
     virtual ~XThreadBase();
@@ -29,7 +31,7 @@ protected:
 private:
     template <typename Tuple_, size_t... > static void Invoke_(void * ) noexcept;
     template <typename Tuple_, size_t... Indices_> static constexpr auto GetInvoke_(std::index_sequence<Indices_...>) noexcept;
-    template<typename ...Args_> void start_(std::size_t ,void * ,void * ,Args_ && ...) noexcept;
+    template<typename ...Args_> void create_(std::size_t ,void * ,void * ,Args_ && ...) noexcept;
     static void taskReturn() noexcept;
     void createTask(void(*f)(void*),std::size_t uxStackDepth,void * pvParameters,void * = {},void * = {}) noexcept;
     XThreadBase() = default;
@@ -51,7 +53,7 @@ constexpr auto XThreadBase::GetInvoke_(std::index_sequence<Indices_...>) noexcep
 { return &Invoke_<Tuple_, Indices_...>; }
 
 template<typename ...Args_>
-void XThreadBase::start_(std::size_t const stack_depth,void * const puxStackBuffer
+void XThreadBase::create_(std::size_t const stack_depth,void * const puxStackBuffer
     ,void * const pxTaskBuffer,Args_ && ...args) noexcept
 {
     using Tuple_ = std::tuple<std::decay_t<Args_>...>;
