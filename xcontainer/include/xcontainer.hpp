@@ -108,6 +108,16 @@ inline namespace XContainer {
             for (;c < canRead;++c) { if (!read(d[c])){ break; } }
             return c;
         }
+
+        int64_t peek(value_type * const d,std::size_t const s) const noexcept {
+            CHECK_EMPTY(d,return -1);
+            if (empty()) { return 0; }
+            auto const canRead{ std::min(static_cast<int64_t>(s),readableSize()) };
+            int64_t c {};
+            auto pos{ m_r_.load(std::memory_order_relaxed) % Size_ };
+            for (;c < canRead;++c,++pos) { d[c] = m_buf_[pos]; }
+            return c;
+        }
     };
 
     template<typename Tp_>
