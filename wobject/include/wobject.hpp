@@ -23,7 +23,7 @@ public:
 class WObject {
     W_DECLARE_PRIVATE(WObject)
 public:
-    explicit WObject() noexcept;
+    explicit WObject();
     virtual ~WObject();
 
     [[nodiscard]] bool signalsBlocked() const noexcept{return d_ptr->blockSig;}

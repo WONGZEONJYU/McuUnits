@@ -4,11 +4,11 @@
 #include <wmetaobject.hpp>
 
 //🐞🐞🐞
-
-WObject::WObject() noexcept :WObject(*std::make_unique<WObjectPrivate>())
+WObject::WObject()
+: WObject(*std::make_unique<WObjectPrivate>().release())
 {}
 
-WObject::WObject(WObjectPrivate& dd):d_ptr(&dd)
+WObject::WObject(WObjectPrivate & dd):d_ptr(&dd)
 { d_ptr->q_ptr = this; }
 
 WObjectPrivate::WObjectPrivate()
@@ -26,8 +26,7 @@ WObject * WObject::sender() const {
     auto const cd { const_cast<WObjectPrivate::ConnectionData *>(&d->connections) };
     if (!cd->currentSender) {return {};}
     for (auto const * c {cd->senders}; c; c = c->next) {
-        if (c->sender == cd->currentSender->sender)
-            {return cd->currentSender->sender;}
+        if (c->sender == cd->currentSender->sender) {return cd->currentSender->sender;}
     }
     return {};
 }
@@ -55,9 +54,8 @@ bool WObject::connectImpl(const WObject * const sender, void ** const signal,
 bool WObject::disconnectImpl(const WObject *sender,void ** signal,
                              const WObject *receiver,void **slot)
 {
-    if (sender == nullptr || (receiver == nullptr && slot != nullptr)) {
-        return false;
-    }
+    if (sender == nullptr || (receiver == nullptr && slot != nullptr))
+    { return false; }
     return WMetaObjectPrivate::disconnect(sender,signal,receiver,slot);
 }
 
@@ -72,11 +70,9 @@ bool WMetaObjectPrivate::disconnect(const WObject * const sender, void ** const 
     bool success {};
     {
         // remove from all connection lists
-        if (auto const connections {scd}
+        if (auto const connections{scd}
             ; disconnectHelper(connections, signal, receiver, slot))
-        {
-            success = true;
-        }
+        { success = true; }
     }
 
     if (success) { scd->cleanOrphanedConnections(s); }
@@ -104,9 +100,8 @@ bool WMetaObjectPrivate::disconnectHelper(WObjectPrivate::ConnectionData * const
 
 bool WObjectPrivate::disconnect(Connection * const c)
 {
-    if (!c){ return false; }
-    if (auto const receiver{ c->receiver }
-        ; !receiver)
+    if (!c) { return false; }
+    if (auto const receiver{ c->receiver } ; !receiver)
     { return false; }
 
     {
