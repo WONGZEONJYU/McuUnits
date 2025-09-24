@@ -376,7 +376,7 @@ namespace WPrivate {
     template<typename Func, int N, typename Args, typename R> class WFunctorSlotObject : public WSlotObjectBase
     {
         using FuncType = Functor<Func, N> ;
-        Func const function{};
+        Func function{};
         static void impl(int const which, WSlotObjectBase * const this_, WObject * const r, void ** const a, bool *) {
             switch (which) {
             case Destroy:
