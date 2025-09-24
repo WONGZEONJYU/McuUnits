@@ -5,15 +5,16 @@
 #endif
 
 #include <wglobal.hpp>
+#include <utility>
 
 class WObject;
 
-namespace WPrivate
-{
-    template <typename T> struct RemoveRef { typedef T Type; };
-    template <typename T> struct RemoveRef<T&> { typedef T Type; };
-    template <typename T> struct RemoveConstRef { typedef T Type; };
-    template <typename T> struct RemoveConstRef<const T&> { typedef T Type; };
+namespace WPrivate {
+
+    template <typename T> struct RemoveRef { using Type = T; };
+    template <typename T> struct RemoveRef<T&> { using Type = T; };
+    template <typename T> struct RemoveConstRef { using Type = T; };
+    template <typename T> struct RemoveConstRef<const T&> { using Type = T; };
 
     /*
        The following List classes are used to help to handle the list of arguments.
@@ -23,16 +24,16 @@ namespace WPrivate
      */
     // With variadic template, lists are represented using a variadic template argument instead of the lisp way
     template <typename...> struct List {};
-    template <typename Head, typename... Tail> struct List<Head, Tail...> { typedef Head Car; typedef List<Tail...> Cdr; };
+    template <typename Head, typename... Tail> struct List<Head, Tail...> { using Car = Head ; using Cdr = List<Tail...> ; };
     template <typename, typename> struct List_Append;
-    template <typename... L1, typename...L2> struct List_Append<List<L1...>, List<L2...>> { typedef List<L1..., L2...> Value; };
+    template <typename... L1, typename...L2> struct List_Append<List<L1...>, List<L2...>> { using Value = List<L1..., L2...> ; };
     template <typename L, int N> struct List_Left {
-        typedef typename List_Append<List<typename L::Car>,typename List_Left<typename L::Cdr, N - 1>::Value>::Value Value;
+        using Value = typename List_Append<List<typename L::Car>,typename List_Left<typename L::Cdr, N - 1>::Value>::Value ;
     };
-    template <typename L> struct List_Left<L, 0> { typedef List<> Value; };
+    template <typename L> struct List_Left<L, 0> { using Value = List<> ; };
     // List_Select<L,N> returns (via typedef Value) the Nth element of the list L
-    template <typename L, int N> struct List_Select { typedef typename List_Select<typename L::Cdr, N - 1>::Value Value; };
-    template <typename L> struct List_Select<L,0> { typedef typename L::Car Value; };
+    template <typename L, int N> struct List_Select { using Value = typename List_Select<typename L::Cdr, N - 1>::Value ; };
+    template <typename L> struct List_Select<L,0> { using Value = typename L::Car ; };
 
     /*
        trick to set the return value of a slot that works even if the signal or the slot returns void
@@ -40,19 +41,18 @@ namespace WPrivate
        if function() returns a value, the operator,(T, ApplyReturnValue<ReturnType>) is called, but if it
        returns void, the builtin one is used without an error.
     */
-    template <typename T>
+    template <typename >
     struct ApplyReturnValue {
         void *data{};
         explicit ApplyReturnValue(void *data_) : data(data_) {}
     };
-    template<typename T, typename U>
-    void operator,(T &&value, const ApplyReturnValue<U> &container) {
-        if (container.data)
-            *reinterpret_cast<U *>(container.data) = std::forward<T>(value);
-    }
-    template<typename T>
-    void operator,(T, const ApplyReturnValue<void> &) {}
 
+    template<typename T, typename U>
+    void operator,(T &&value, ApplyReturnValue<U> const & container) noexcept
+    { if (container.data) { *reinterpret_cast<U *>(container.data) = std::forward<T>(value); } }
+
+    template<typename T>
+    void operator,(T, const ApplyReturnValue<void> &) noexcept {}
 
     /*
       The FunctionPointer<Func> struct is a type trait for function pointer.
@@ -78,7 +78,7 @@ namespace WPrivate
 
     template<int N, int... I1, int... I2>
     struct ConcatSeqImpl<N, IndexesList<I1...>, IndexesList<I2...>>
-        : IndexesList<I1..., (N + I2)...>{};
+        : IndexesList<I1..., N + I2...>{};
 
     template<int N, class S1, class S2>
     using ConcatSeq = InvokeGenSeq<ConcatSeqImpl<N, S1, S2>>;
@@ -95,121 +95,112 @@ namespace WPrivate
     template<int N>
     struct Indexes { using Value = makeIndexSequence<N>; };
 
-    template<typename Func> struct FunctionPointer { enum {ArgumentCount = -1, IsPointerToMemberFunction = false}; };
+    template<typename > struct FunctionPointer { enum {ArgumentCount = -1, IsPointerToMemberFunction = false}; };
 
     template <typename, typename, typename, typename> struct FunctorCall;
+
     template <int... II, typename... SignalArgs, typename R, typename Function>
     struct FunctorCall<IndexesList<II...>, List<SignalArgs...>, R, Function> {
-        static void call(Function &f, void **arg) {
-            f((*reinterpret_cast<typename RemoveRef<SignalArgs>::Type *>(arg[II+1]))...), ApplyReturnValue<R>(arg[0]);
-        }
+        static void call(Function &f, void ** const arg)
+        { f((*reinterpret_cast<typename RemoveRef<SignalArgs>::Type *>(arg[II+1]))...), ApplyReturnValue<R>(arg[0]); }
     };
+
     template <int... II, typename... SignalArgs, typename R, typename... SlotArgs, typename SlotRet, class Obj>
     struct FunctorCall<IndexesList<II...>, List<SignalArgs...>, R, SlotRet (Obj::*)(SlotArgs...)> {
-        static void call(SlotRet (Obj::*f)(SlotArgs...), Obj *o, void **arg) {
-            (o->*f)((*reinterpret_cast<typename RemoveRef<SignalArgs>::Type *>(arg[II+1]))...), ApplyReturnValue<R>(arg[0]);
-        }
+        using Function = SlotRet (Obj::*)(SlotArgs...);
+        static void call(Function const f, Obj * const o, void ** const arg)
+        { (o->*f)((*reinterpret_cast<typename RemoveRef<SignalArgs>::Type *>(arg[II+1]))...), ApplyReturnValue<R>(arg[0]); }
     };
+
     template <int... II, typename... SignalArgs, typename R, typename... SlotArgs, typename SlotRet, class Obj>
     struct FunctorCall<IndexesList<II...>, List<SignalArgs...>, R, SlotRet (Obj::*)(SlotArgs...) const> {
-        static void call(SlotRet (Obj::*f)(SlotArgs...) const, Obj *o, void **arg) {
-            (o->*f)((*reinterpret_cast<typename RemoveRef<SignalArgs>::Type *>(arg[II+1]))...), ApplyReturnValue<R>(arg[0]);
-        }
+        using Function = SlotRet (Obj::*)(SlotArgs...) const;
+        static void call(Function const f, Obj * const o, void ** const arg)
+        { (o->*f)((*reinterpret_cast<typename RemoveRef<SignalArgs>::Type *>(arg[II+1]))...), ApplyReturnValue<R>(arg[0]); }
     };
 
     template <int... II, typename... SignalArgs, typename R, typename... SlotArgs, typename SlotRet, class Obj>
     struct FunctorCall<IndexesList<II...>, List<SignalArgs...>, R, SlotRet (Obj::*)(SlotArgs...) noexcept> {
-        static void call(SlotRet (Obj::*f)(SlotArgs...) noexcept, Obj *o, void **arg) {
-            (o->*f)((*reinterpret_cast<typename RemoveRef<SignalArgs>::Type *>(arg[II+1]))...), ApplyReturnValue<R>(arg[0]);
-        }
+        using Function = SlotRet (Obj::*)(SlotArgs...) noexcept;
+        static void call(Function const f, Obj * const o, void ** const arg)
+        { (o->*f)((*reinterpret_cast<typename RemoveRef<SignalArgs>::Type *>(arg[II+1]))...), ApplyReturnValue<R>(arg[0]); }
     };
+
     template <int... II, typename... SignalArgs, typename R, typename... SlotArgs, typename SlotRet, class Obj>
     struct FunctorCall<IndexesList<II...>, List<SignalArgs...>, R, SlotRet (Obj::*)(SlotArgs...) const noexcept> {
-        static void call(SlotRet (Obj::*f)(SlotArgs...) const noexcept, Obj *o, void **arg) {
-            (o->*f)((*reinterpret_cast<typename RemoveRef<SignalArgs>::Type *>(arg[II+1]))...), ApplyReturnValue<R>(arg[0]);
-        }
+        using Function = SlotRet (Obj::*)(SlotArgs...) const noexcept;
+        static void call( Function const f, Obj * const o, void ** const arg)
+        { (o->*f)((*reinterpret_cast<typename RemoveRef<SignalArgs>::Type *>(arg[II+1]))...), ApplyReturnValue<R>(arg[0]); }
     };
 
-    template<class Obj, typename Ret, typename... Args> struct FunctionPointer<Ret (Obj::*) (Args...)>
-    {
-        typedef Obj Object;
-        typedef List<Args...>  Arguments;
-        typedef Ret ReturnType;
-        typedef Ret (Obj::*Function) (Args...);
+    template<class Obj, typename Ret, typename... Args> struct FunctionPointer<Ret (Obj::*) (Args...)> {
+        using Object = Obj;
+        using Arguments = List<Args...>;
+        using ReturnType = Ret;
+        using Function = Ret (Obj::*) (Args...);
         enum {ArgumentCount = sizeof...(Args), IsPointerToMemberFunction = true};
         template <typename SignalArgs, typename R>
-        static void call(Function f, Obj *o, void **arg) {
-            FunctorCall<typename Indexes<ArgumentCount>::Value, SignalArgs, R, Function>::call(f, o, arg);
-        }
-    };
-    template<class Obj, typename Ret, typename... Args> struct FunctionPointer<Ret (Obj::*) (Args...) const>
-    {
-        typedef Obj Object;
-        typedef List<Args...>  Arguments;
-        typedef Ret ReturnType;
-        typedef Ret (Obj::*Function) (Args...) const;
-        enum {ArgumentCount = sizeof...(Args), IsPointerToMemberFunction = true};
-        template <typename SignalArgs, typename R>
-        static void call(Function f, Obj *o, void **arg) {
-            FunctorCall<typename Indexes<ArgumentCount>::Value, SignalArgs, R, Function>::call(f, o, arg);
-        }
+        static void call(Function const f, Obj * const o, void ** const arg)
+        { FunctorCall<typename Indexes<ArgumentCount>::Value, SignalArgs, R, Function>::call(f, o, arg); }
     };
 
-    template<typename Ret, typename... Args> struct FunctionPointer<Ret (*) (Args...)>
-    {
-        typedef List<Args...> Arguments;
-        typedef Ret ReturnType;
-        typedef Ret (*Function) (Args...);
+    template<class Obj, typename Ret, typename... Args> struct FunctionPointer<Ret (Obj::*) (Args...) const> {
+        using Object = Obj ;
+        using Arguments = List<Args...>  ;
+        using ReturnType =  Ret ;
+        using Function = Ret (Obj::*) (Args...) const;
+        enum {ArgumentCount = sizeof...(Args), IsPointerToMemberFunction = true};
+        template <typename SignalArgs, typename R>
+        static void call(Function const f, Obj * const o, void ** const arg)
+        { FunctorCall<typename Indexes<ArgumentCount>::Value, SignalArgs, R, Function>::call(f, o, arg); }
+    };
+
+    template<typename Ret, typename... Args> struct FunctionPointer<Ret (*) (Args...)> {
+        using Arguments = List<Args...> ;
+        using ReturnType = Ret ;
+        using Function = Ret (*) (Args...);
         enum {ArgumentCount = sizeof...(Args), IsPointerToMemberFunction = false};
         template <typename SignalArgs, typename R>
-        static void call(Function f, void *, void **arg) {
-            FunctorCall<typename Indexes<ArgumentCount>::Value, SignalArgs, R, Function>::call(f, arg);
-        }
+        static void call(Function const f, void *, void ** const arg)
+        { FunctorCall<typename Indexes<ArgumentCount>::Value, SignalArgs, R, Function>::call(f, arg); }
     };
 
-    template<class Obj, typename Ret, typename... Args> struct FunctionPointer<Ret (Obj::*) (Args...) noexcept>
-    {
-        typedef Obj Object;
-        typedef List<Args...>  Arguments;
-        typedef Ret ReturnType;
-        typedef Ret (Obj::*Function) (Args...) noexcept;
+    template<class Obj, typename Ret, typename... Args> struct FunctionPointer<Ret (Obj::*) (Args...) noexcept> {
+        using Object = Obj ;
+        using Arguments = List<Args...> ;
+        using ReturnType = Ret ;
+        using Function = Ret (Obj::*) (Args...) noexcept;
         enum {ArgumentCount = sizeof...(Args), IsPointerToMemberFunction = true};
         template <typename SignalArgs, typename R>
-        static void call(Function f, Obj *o, void **arg) {
-            FunctorCall<typename Indexes<ArgumentCount>::Value, SignalArgs, R, Function>::call(f, o, arg);
-        }
-    };
-    template<class Obj, typename Ret, typename... Args> struct FunctionPointer<Ret (Obj::*) (Args...) const noexcept>
-    {
-        typedef Obj Object;
-        typedef List<Args...>  Arguments;
-        typedef Ret ReturnType;
-        typedef Ret (Obj::*Function) (Args...) const noexcept;
-        enum {ArgumentCount = sizeof...(Args), IsPointerToMemberFunction = true};
-        template <typename SignalArgs, typename R>
-        static void call(Function f, Obj *o, void **arg) {
-            FunctorCall<typename Indexes<ArgumentCount>::Value, SignalArgs, R, Function>::call(f, o, arg);
-        }
+        static void call(Function const f, Obj * const o, void ** const arg)
+        { FunctorCall<typename Indexes<ArgumentCount>::Value, SignalArgs, R, Function>::call(f, o, arg); }
     };
 
-    template<typename Ret, typename... Args> struct FunctionPointer<Ret (*) (Args...) noexcept>
-    {
-        typedef List<Args...> Arguments;
-        typedef Ret ReturnType;
-        typedef Ret (*Function) (Args...) noexcept;
+    template<class Obj, typename Ret, typename... Args> struct FunctionPointer<Ret (Obj::*) (Args...) const noexcept> {
+        using Object = Obj ;
+        using Arguments = List<Args...>  ;
+        using ReturnType = Ret ;
+        using Function = Ret (Obj::*) (Args...) const noexcept;
+        enum {ArgumentCount = sizeof...(Args), IsPointerToMemberFunction = true};
+        template <typename SignalArgs, typename R>
+        static void call(Function const f, Obj * const o, void ** const arg)
+        { FunctorCall<typename Indexes<ArgumentCount>::Value, SignalArgs, R, Function>::call(f, o, arg); }
+    };
+
+    template<typename Ret, typename... Args> struct FunctionPointer<Ret (*) (Args...) noexcept> {
+        using Arguments = List<Args...> ;
+        using ReturnType = Ret ;
+        using Function = Ret (*) (Args...) noexcept;
         enum {ArgumentCount = sizeof...(Args), IsPointerToMemberFunction = false};
         template <typename SignalArgs, typename R>
-        static void call(Function f, void *, void **arg) {
-            FunctorCall<typename Indexes<ArgumentCount>::Value, SignalArgs, R, Function>::call(f, arg);
-        }
+        static void call(Function const f, void *, void ** const arg)
+        { FunctorCall<typename Indexes<ArgumentCount>::Value, SignalArgs, R, Function>::call(f, arg); }
     };
 
-    template<typename Function, int N> struct Functor
-    {
+    template<typename Function, int N> struct Functor {
         template <typename SignalArgs, typename R>
-        static void call(Function &f, void *, void **arg) {
-            FunctorCall<typename Indexes<N>::Value, SignalArgs, R, Function>::call(f, arg);
-        }
+        static void call(Function & f, void *, void ** const arg)
+        { FunctorCall<typename Indexes<N>::Value, SignalArgs, R, Function>::call(f, arg); }
     };
 
     /*
@@ -218,16 +209,12 @@ namespace WPrivate
         around the fact that it's undefined behavior to instantiate
         std::underlying_type on non-enums (cf. §20.13.7.6 [meta.trans.other]).
     */
-    template<typename E, typename Enable = void>
-    struct IsEnumUnderlyingTypeSigned : std::false_type
-    {
-    };
+    template<typename , typename = void>
+    struct IsEnumUnderlyingTypeSigned : std::false_type {};
 
     template<typename E>
-    struct IsEnumUnderlyingTypeSigned<E, typename std::enable_if<std::is_enum<E>::value>::type>
-            : std::integral_constant<bool, std::is_signed<typename std::underlying_type<E>::type>::value>
-    {
-    };
+    struct IsEnumUnderlyingTypeSigned<E, std::enable_if_t<std::is_enum_v<E>>>
+            : std::integral_constant<bool, std::is_signed_v<std::underlying_type_t<E>>> {};
 
     /*
        Logic that checks if the argument of the slot does not narrow the
@@ -235,43 +222,32 @@ namespace WPrivate
        [dcl.init.list] for the definition of narrowing.
        For incomplete From/To types, there's no narrowing.
     */
-    template<typename From, typename To, typename Enable = void>
-    struct AreArgumentsNarrowedBase : std::false_type
-    {
-    };
-
-    template <bool _Test, class _Ty = void>
-    struct enable_if {}; // no member "type" when !_Test
-
-    template <class _Ty>
-    struct enable_if<true, _Ty> { // type is _Ty for _Test
-        using type = _Ty;
-    };
-
-    template <bool _Test, class _Ty = void>
-    using enable_if_t = typename enable_if<_Test, _Ty>::type;
+    template<typename , typename , typename = void>
+    struct AreArgumentsNarrowedBase : std::false_type {};
 
     template <typename T>
-    using is_bool = std::is_same<bool, typename std::decay<T>::type>;
+    using is_bool = std::is_same<bool, std::decay_t<T>>;
+
+    template <typename T>
+    inline constexpr auto is_bool_v { is_bool<T>::value };
 
     template<typename From, typename To>
-    struct AreArgumentsNarrowedBase<From, To, typename std::enable_if<sizeof(From) && sizeof(To)>::type>
+    struct AreArgumentsNarrowedBase<From, To, std::enable_if_t<sizeof(From) && sizeof(To)>>
         : std::integral_constant<bool,
-              (std::is_floating_point<From>::value && std::is_integral<To>::value) ||
-              (std::is_floating_point<From>::value && std::is_floating_point<To>::value && sizeof(From) > sizeof(To)) ||
-              ((std::is_pointer<From>::value || std::is_member_pointer<From>::value) && WPrivate::is_bool<To>::value) ||
-              ((std::is_integral<From>::value || std::is_enum<From>::value) && std::is_floating_point<To>::value) ||
-              (std::is_integral<From>::value && std::is_integral<To>::value
+              (std::is_floating_point_v<From> && std::is_integral_v<To>) ||
+              (std::is_floating_point_v<From> && std::is_floating_point_v<To> && sizeof(From) > sizeof(To)) ||
+              ((std::is_pointer_v<From> || std::is_member_pointer_v<From>) && is_bool_v<To>) ||
+              ((std::is_integral_v<From> || std::is_enum_v<From>) && std::is_floating_point_v<To>) ||
+              (std::is_integral_v<From> && std::is_integral_v<To>
                && (sizeof(From) > sizeof(To)
-                   || (std::is_signed<From>::value ? !std::is_signed<To>::value
-                       : (std::is_signed<To>::value && sizeof(From) == sizeof(To))))) ||
-              (std::is_enum<From>::value && std::is_integral<To>::value
+                   || (std::is_signed_v<From> ? !std::is_signed_v<To>
+                       : std::is_signed_v<To> && sizeof(From) == sizeof(To)))) ||
+              (std::is_enum_v<From> && std::is_integral_v<To>
                && (sizeof(From) > sizeof(To)
-                   || (IsEnumUnderlyingTypeSigned<From>::value ? !std::is_signed<To>::value
-                       : (std::is_signed<To>::value && sizeof(From) == sizeof(To)))))
+                   || (IsEnumUnderlyingTypeSigned<From>::value ? !std::is_signed_v<To>
+                       : std::is_signed_v<To> && sizeof(From) == sizeof(To))))
               >
-    {
-    };
+    {};
 
     /*
        Logic that check if the arguments of the slot matches the argument of the signal.
@@ -279,9 +255,9 @@ namespace WPrivate
        Q_STATIC_ASSERT(CheckCompatibleArguments<FunctionPointer<Signal>::Arguments, FunctionPointer<Slot>::Arguments>::value)
     */
     template<typename A1, typename A2> struct AreArgumentsCompatible {
-        static int test(const typename RemoveRef<A2>::Type&);
-        static char test(...);
-        static const typename RemoveRef<A1>::Type &dummy();
+        static int test(const typename RemoveRef<A2>::Type&){return {};}
+        static char test(...){return {};}
+        static const typename RemoveRef<A1>::Type & dummy() {return {};}
         enum { value = sizeof(test(dummy())) == sizeof(int) };
 #ifdef W_NO_NARROWING_CONVERSIONS_IN_CONNECT
         using AreArgumentsNarrowed = AreArgumentsNarrowedBase<typename RemoveRef<A1>::Type, typename RemoveRef<A2>::Type>;
@@ -295,12 +271,11 @@ namespace WPrivate
     template<typename A> struct AreArgumentsCompatible<A, void> { enum { value = true }; };
     template<> struct AreArgumentsCompatible<void, void> { enum { value = true }; };
 
-    template <typename List1, typename List2> struct CheckCompatibleArguments { enum { value = false }; };
+    template <typename , typename > struct CheckCompatibleArguments { enum { value = false }; };
     template <> struct CheckCompatibleArguments<List<>, List<>> { enum { value = true }; };
     template <typename List1> struct CheckCompatibleArguments<List1, List<>> { enum { value = true }; };
     template <typename Arg1, typename Arg2, typename... Tail1, typename... Tail2>
-    struct CheckCompatibleArguments<List<Arg1, Tail1...>, List<Arg2, Tail2...>>
-    {
+    struct CheckCompatibleArguments<List<Arg1, Tail1...>, List<Arg2, Tail2...>> {
         enum { value = AreArgumentsCompatible<typename RemoveConstRef<Arg1>::Type, typename RemoveConstRef<Arg2>::Type>::value
                     && CheckCompatibleArguments<List<Tail1...>, List<Tail2...>>::value };
     };
@@ -310,10 +285,11 @@ namespace WPrivate
        the arguments from the signal.
        Value is the number of arguments, or -1 if nothing matches.
      */
-    template <typename Functor, typename ArgList> struct ComputeFunctorArgumentCount;
+    template <typename , typename > struct ComputeFunctorArgumentCount;
 
-    template <typename Functor, typename ArgList, bool Done> struct ComputeFunctorArgumentCountHelper
+    template <typename , typename , bool > struct ComputeFunctorArgumentCountHelper
     { enum { Value = -1 }; };
+
     template <typename Functor, typename First, typename... ArgList>
     struct ComputeFunctorArgumentCountHelper<Functor, List<First, ArgList...>, false>
         : ComputeFunctorArgumentCount<Functor,
@@ -321,30 +297,33 @@ namespace WPrivate
 
     template <typename Functor, typename... ArgList> struct ComputeFunctorArgumentCount<Functor, List<ArgList...>>
     {
-        template <typename D> static D dummy();
-        template <typename F> static auto test(F f) -> decltype(((f.operator()((dummy<ArgList>())...)), int()));
-        static char test(...);
+        template <typename D> static D dummy()
+        {return {};}
+        template <typename F> static auto test([[maybe_unused]] F f) -> decltype(f.operator()((dummy<ArgList>())...), int())
+        {return {};}
+        static char test(...)
+        { return {};}
         enum {
             Ok = sizeof(test(dummy<Functor>())) == sizeof(int),
-            Value = Ok ? int(sizeof...(ArgList)) : int(ComputeFunctorArgumentCountHelper<Functor, List<ArgList...>, Ok>::Value)
+            Value = Ok ? static_cast<int>(sizeof...(ArgList)) : static_cast<int>(ComputeFunctorArgumentCountHelper<Functor, List<ArgList...>, Ok>::Value)
         };
     };
 
     /* get the return type of a functor, given the signal argument list  */
     template <typename Functor, typename ArgList> struct FunctorReturnType;
     template <typename Functor, typename ... ArgList> struct FunctorReturnType<Functor, List<ArgList...>> {
-        template <typename D> static D dummy();
-        typedef decltype(dummy<Functor>().operator()((dummy<ArgList>())...)) Value;
+        template <typename D> static D dummy() {return {};}
+        using Value = decltype(dummy<Functor>().operator()((dummy<ArgList>())...)) ;
     };
 
     // internal base class (interface) containing functions required to call a slot managed by a pointer to function.
     class WSlotObjectBase {
-        int m_ref;
+        int m_ref{};
         // don't use virtual functions here; we don't want the
         // compiler to create tons of per-polymorphic-class stuff that
         // we'll never need. We just use one function pointer.
-        typedef void (*ImplFn)(int which, WSlotObjectBase* this_, WObject *receiver, void **args, bool *ret);
-        const ImplFn m_impl;
+        using ImplFn = void (*)(int which, WSlotObjectBase* this_, WObject *receiver, void **args, bool *ret);
+        ImplFn const m_impl{};
     protected:
         enum Operation {
             Destroy,
@@ -354,27 +333,26 @@ namespace WPrivate
             NumOperations
         };
     public:
-        explicit WSlotObjectBase(ImplFn fn) :m_ref(1), m_impl(fn) {}
-
-        inline int ref() noexcept { return (++m_ref); }
-        inline void destroyIfLastRef() noexcept
-        { if (!(--m_ref)) m_impl(Destroy, this, nullptr, nullptr, nullptr); }
-        inline bool compare(void **a) { bool ret = false; m_impl(Compare, this, nullptr, a, &ret); return ret; }
-        inline void call(WObject *r, void **a)  { m_impl(Call,    this, r, a, nullptr); }
+        explicit WSlotObjectBase(ImplFn const fn) :m_ref(1), m_impl(fn) {}
+        int ref() noexcept { return ++m_ref; }
+        void destroyIfLastRef() noexcept
+        { if (!--m_ref) { m_impl(Destroy, this, nullptr, nullptr, nullptr); } }
+        bool compare(void ** const a) noexcept
+        { bool ret {}; m_impl(Compare, this, nullptr, a, &ret); return ret; }
+        void call(WObject * const r, void ** const a)
+        { m_impl(Call,this, r, a, nullptr); }
     protected:
-        ~WSlotObjectBase() {}
+        ~WSlotObjectBase() = default;
     private:
         W_DISABLE_COPY_MOVE(WSlotObjectBase)
     };
 
     // implementation of QSlotObjectBase for which the slot is a pointer to member function of a QObject
     // Args and R are the List of arguments and the return type of the signal to which the slot is connected.
-    template<typename Func, typename Args, typename R> class WSlotObject : public WSlotObjectBase
-    {
-        typedef WPrivate::FunctionPointer<Func> FuncType;
-        Func function;
-        static void impl(int which, WSlotObjectBase *this_, WObject *r, void **a, bool *ret)
-        {
+    template<typename Func, typename Args, typename R> class WSlotObject : public WSlotObjectBase {
+        using FuncType = FunctionPointer<Func> ;
+        Func const function{};
+        static void impl(int const which, WSlotObjectBase * const this_, WObject * const r, void ** const a, bool * const ret) {
             switch (which) {
             case Destroy:
                 delete static_cast<WSlotObject*>(this_);
@@ -386,6 +364,7 @@ namespace WPrivate
                 *ret = *reinterpret_cast<Func *>(a) == static_cast<WSlotObject*>(this_)->function;
                 break;
             case NumOperations: ;
+                    default: break;
             }
         }
     public:
@@ -396,10 +375,9 @@ namespace WPrivate
     // Args and R are the List of arguments and the return type of the signal to which the slot is connected.
     template<typename Func, int N, typename Args, typename R> class WFunctorSlotObject : public WSlotObjectBase
     {
-        typedef WPrivate::Functor<Func, N> FuncType;
-        Func function;
-        static void impl(int which, WSlotObjectBase *this_, WObject *r, void **a, bool *ret)
-        {
+        using FuncType = Functor<Func, N> ;
+        Func const function{};
+        static void impl(int const which, WSlotObjectBase * const this_, WObject * const r, void ** const a, bool *) {
             switch (which) {
             case Destroy:
                 delete static_cast<WFunctorSlotObject*>(this_);
@@ -409,19 +387,17 @@ namespace WPrivate
                 break;
             case Compare: // not implemented
             case NumOperations:
-                (void)(ret);
+            default:break;
             }
         }
     public:
         explicit WFunctorSlotObject(Func f) : WSlotObjectBase(&impl), function(std::move(f)) {}
     };
 
-    template<typename Func, typename Args, typename R> class WStaticSlotObject : public WSlotObjectBase
-    {
-        typedef FunctionPointer<Func> FuncType;
-        Func function;
-        static void impl(int which, WSlotObjectBase *this_, WObject *r, void **a, bool *ret)
-        {
+    template<typename Func, typename Args, typename R> class WStaticSlotObject : public WSlotObjectBase {
+        using FuncType = FunctionPointer<Func> ;
+        Func const function{};
+        static void impl(int const which, WSlotObjectBase *this_, WObject *r, void **a, bool *) {
             switch (which) {
             case Destroy:
                 delete static_cast<WStaticSlotObject*>(this_);
@@ -431,7 +407,7 @@ namespace WPrivate
                 break;
             case Compare:   // not implemented
             case NumOperations:
-               (void)(ret);
+            default:break;
             }
         }
     public:
@@ -440,13 +416,11 @@ namespace WPrivate
 
     // typedefs for readability for when there are no parameters
     template <typename Func>
-    using WSlotObjectWithNoArgs = WSlotObject<Func,
-                                              WPrivate::List<>,
-                                              typename WPrivate::FunctionPointer<Func>::ReturnType>;
+    using WSlotObjectWithNoArgs = WSlotObject<Func,List<>,typename FunctionPointer<Func>::ReturnType>;
 
     template <typename Func, typename R>
-    using WFunctorSlotObjectWithNoArgs = WFunctorSlotObject<Func, 0, WPrivate::List<>, R>;
+    using WFunctorSlotObjectWithNoArgs = WFunctorSlotObject<Func, 0, List<>, R>;
 
     template <typename Func>
-    using WFunctorSlotObjectWithNoArgsImplicitReturn = WFunctorSlotObjectWithNoArgs<Func, typename WPrivate::FunctionPointer<Func>::ReturnType>;
+    using WFunctorSlotObjectWithNoArgsImplicitReturn = WFunctorSlotObjectWithNoArgs<Func, typename FunctionPointer<Func>::ReturnType>;
 }

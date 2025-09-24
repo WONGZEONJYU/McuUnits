@@ -1,5 +1,5 @@
 #include <button.hpp>
-#include <button_p.hpp>
+#include "button_p.hpp"
 #include <buttoncore.hpp>
 
 XSharedPtr<Button> Button::create(levelDetectFunc && f,bool const level
@@ -19,19 +19,19 @@ Button::Button() = default;
 Button::~Button() = default;
 
 void Button::shortClickedSignal(Mode const type,void * const d)
-{ _Sig_::_emit_(this,&Button::shortClickedSignal,nullptr,type,d); }
+{ Emit::emit_(this,&Button::shortClickedSignal,nullptr,type,d); }
 
 void Button::doubleClickedSignal(Mode const type,void * const d)
-{ _Sig_::_emit_(this,&Button::doubleClickedSignal,nullptr,type,d); }
+{ Emit::emit_(this,&Button::doubleClickedSignal,nullptr,type,d); }
 
 void Button::longClickedSignal(Mode const type,void * const d)
-{ _Sig_::_emit_(this,&Button::longClickedSignal,nullptr,type,d); }
+{ Emit::emit_(this,&Button::longClickedSignal,nullptr,type,d); }
 
 void Button::longPressHoldSignal(Mode const type,void * const d)
-{ _Sig_:: _emit_(this,&Button::longPressHoldSignal,nullptr,type,d); }
+{ Emit::emit_(this,&Button::longPressHoldSignal,nullptr,type,d); }
 
 void Button::longReleaseSignal(Mode const type,void * const d)
-{ _Sig_:: _emit_(this,&Button::longReleaseSignal,nullptr,type,d); }
+{ Emit::emit_(this,&Button::longReleaseSignal,nullptr,type,d); }
 
 void Button::exec_() noexcept
 { W_D(Button); d->exec_(); }

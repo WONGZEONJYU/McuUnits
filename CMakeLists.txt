@@ -12,11 +12,14 @@ file(GLOB_RECURSE UNIT_HEADERS
     ${CMAKE_CURRENT_SOURCE_DIR}/*/*.hpp
 )
 
+#list(FILTER UNIT_HEADERS EXCLUDE REGEX ".*_p\\.h(pp)?$")
+
 # 创建静态库
 add_library(${LIBName} STATIC ${UNIT_SOURCES} ${UNIT_HEADERS})
 
 # 自动发现所有子目录并设置为包含路径
-file(GLOB UNIT_SUBDIRS LIST_DIRECTORIES true ${CMAKE_CURRENT_SOURCE_DIR}/*)
+file(GLOB UNIT_SUBDIRS LIST_DIRECTORIES true ${CMAKE_CURRENT_SOURCE_DIR}/*/include)
+message(STATUS ${UNIT_SUBDIRS})
 set(UNIT_INCLUDE_DIRS "")
 foreach(subdir ${UNIT_SUBDIRS})
     if(IS_DIRECTORY ${subdir})

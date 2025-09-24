@@ -3,11 +3,11 @@
 
 struct WMetaMethod {
     template <typename PointerToMemberFunction>
-    static void *fromSignal(PointerToMemberFunction signal)
+    static void * fromSignal(PointerToMemberFunction signal) noexcept
     { return fromSignalImpl(reinterpret_cast<void **>(&signal)); }
 
 private:
-    static void *fromSignalImpl(void **);
+    static void *fromSignalImpl(void **) noexcept;
     friend class WObject;
     friend struct WMetaObject;
 };
