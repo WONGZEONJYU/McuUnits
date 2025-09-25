@@ -4,8 +4,8 @@
 #include <type_traits>
 #include <wobjectdefs_impl.hpp>
 
-#define signals public
-#define slots
+#define W_SIGNALS public
+#define W_SLOTS
 
 class WObject;
 

@@ -83,7 +83,7 @@ public:
 #undef MAKE_CALL_ON
 #undef FOR_EACH_MAKE
 
-signals:
+W_SIGNALS:
     void shortClickedSignal(Mode,void *);
     void doubleClickedSignal(Mode,void *);
     void longClickedSignal(Mode,void *);

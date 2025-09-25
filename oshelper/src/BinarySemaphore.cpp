@@ -14,7 +14,7 @@ BinarySemaphore::~BinarySemaphore()
 { vSemaphoreDelete(m_BinarySemaphore); }
 
 bool BinarySemaphore::acquire(int64_t const wait) const noexcept
-{ return xSemaphoreTake(m_BinarySemaphore,wait <= 0 ? portMAX_DELAY : static_cast<TickType_t>(wait)); }
+{ return xSemaphoreTake(m_BinarySemaphore,wait < 0 ? portMAX_DELAY : static_cast<TickType_t>(wait)); }
 
 bool BinarySemaphore::acquireFromISR() const noexcept {
     BaseType_t x{},b { xSemaphoreTakeFromISR( m_BinarySemaphore,&x) };

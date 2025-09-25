@@ -19,6 +19,11 @@ class BinarySemaphore final {
 public:
     explicit BinarySemaphore();
     ~BinarySemaphore();
+    /**
+     * 获取信号量
+     * @param wait -1永远阻塞,0不阻塞,greater than 0 等待wait毫秒
+     * @return true or false
+     */
     [[nodiscard]] bool acquire(int64_t wait = -1) const noexcept;
     [[nodiscard]] bool acquireFromISR() const noexcept;
     [[nodiscard]] bool releases() const noexcept;
