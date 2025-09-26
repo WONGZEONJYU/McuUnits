@@ -18,19 +18,19 @@ Button::Button() = default;
 
 Button::~Button() = default;
 
-void Button::shortClickedSignal(Mode const type,void * const d)
+void Button::shortClickedSignal(ButtonMode const type,void * const d)
 { Emit::emit_(this,&Button::shortClickedSignal,nullptr,type,d); }
 
-void Button::doubleClickedSignal(Mode const type,void * const d)
+void Button::doubleClickedSignal(ButtonMode const type,void * const d)
 { Emit::emit_(this,&Button::doubleClickedSignal,nullptr,type,d); }
 
-void Button::longClickedSignal(Mode const type,void * const d)
+void Button::longClickedSignal(ButtonMode const type,void * const d)
 { Emit::emit_(this,&Button::longClickedSignal,nullptr,type,d); }
 
-void Button::longPressHoldSignal(Mode const type,void * const d)
+void Button::longPressHoldSignal(ButtonMode const type,void * const d)
 { Emit::emit_(this,&Button::longPressHoldSignal,nullptr,type,d); }
 
-void Button::longReleaseSignal(Mode const type,void * const d)
+void Button::longReleaseSignal(ButtonMode const type,void * const d)
 { Emit::emit_(this,&Button::longReleaseSignal,nullptr,type,d); }
 
 void Button::exec_() noexcept

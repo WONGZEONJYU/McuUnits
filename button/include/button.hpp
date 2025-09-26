@@ -12,7 +12,7 @@
     #define DoubleClickNum  2       /*连按次数(2c)，单位时间内需按下的次数，2为双击*/
 #endif
 
-enum class Mode : int {
+enum class ButtonMode : int {
     ShortClicked = 1,
     DoubleClicked ,
     LongClicked ,
@@ -20,7 +20,7 @@ enum class Mode : int {
     LongRelease ,
 };
 
-enum TimeValue : int {
+enum ButtonTimeValue : uint16_t {
     DoubleClickTime = 200,
     LongClickTime = 600,
     DebounceTime = 10,
@@ -40,11 +40,6 @@ struct ButtonTime final {
         ,uint16_t const doubleClickNum = DoubleClickNum):
         m_doubleClickTime(doubleClickTime),m_longClickTime(longClickTime),m_debounceTime(debounceTime)
         ,m_doubleClickNum(doubleClickNum){}
-
-    ButtonTime(const ButtonTime &) = default;
-    ButtonTime(ButtonTime &&) = default;
-    ButtonTime & operator = (const ButtonTime &) = default;
-    ButtonTime & operator = (ButtonTime &&) = default;
 };
 
 class Button;
@@ -84,11 +79,11 @@ public:
 #undef FOR_EACH_MAKE
 
 W_SIGNALS:
-    void shortClickedSignal(Mode,void *);
-    void doubleClickedSignal(Mode,void *);
-    void longClickedSignal(Mode,void *);
-    void longPressHoldSignal(Mode,void *);
-    void longReleaseSignal(Mode,void *);
+    void shortClickedSignal(ButtonMode,void *);
+    void doubleClickedSignal(ButtonMode,void *);
+    void longClickedSignal(ButtonMode,void *);
+    void longPressHoldSignal(ButtonMode,void *);
+    void longReleaseSignal(ButtonMode,void *);
 
 private:
     explicit Button();

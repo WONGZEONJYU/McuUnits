@@ -7,7 +7,6 @@ class ButtonPrivate final : public ButtonData {
     W_DECLARE_PUBLIC(Button)
     void * m_data_{};
     std::function<bool()> m_getPin_{};
-
     std::uint16_t m_lastTime_{}  /*上一次双击时间记录*/
             ,m_keyTicks_{}  /*按键计时标志*/
             ,m_keyStep_{}   /*按键状态*/
@@ -19,23 +18,6 @@ class ButtonPrivate final : public ButtonData {
             ,m_doubleClickNum_{}
             ,m_reuse_ : 1{} /*复用变量*/
             ,m_level_ : 1 {}; /*电平方向*/
-
-#if 0
-    struct DB {
-        void * data{};
-        std::size_t LastTime{},  /*上一次双击时间记录*/
-                KeyTicks{},  /*按键计时标志*/
-                KEY_STEP{},   /*按键状态*/
-                KeyRepeat{},  /*双击计次*/
-                Debounce{};   /*消抖计数*/
-        uint32_t ReuseValue : 1{}; /*复用变量*/
-    }m_bd_{};
-    struct TIME {
-        std::size_t m_doubleClickTime{},m_longClickTime{},
-            m_debounceTime{},m_doubleClickNum{};
-        uint32_t level : 1{};
-    }m_time_ {};
-#endif
 
 public:
     explicit ButtonPrivate(Button * const o)
@@ -66,7 +48,7 @@ inline void ButtonPrivate::init_(uint16_t const doubleClickTime,
 
 inline void ButtonPrivate::exec_() {
     if (!m_getPin_){ return; }
-    if (m_keyStep_ > 0U || m_keyRepeat_  > 0U) { ++m_keyTicks_; }
+    if (m_keyStep_ > 0U || m_keyRepeat_ > 0U) { ++m_keyTicks_; }
 
     switch (m_keyStep_) {
         case 0: {
@@ -81,21 +63,21 @@ inline void ButtonPrivate::exec_() {
         case 1:{
             if ( m_getPin_() == m_level_ && !m_reuse_ && m_keyTicks_ >= m_longClickTime_ ) { /*超时执行长按动作--动作时长2秒*/
                 m_reuse_ = true;
-                q_func()->longClickedSignal(Mode::LongClicked,m_data_);
+                q_func()->longClickedSignal(ButtonMode::LongClicked,m_data_);
             }else if (m_getPin_() != m_level_){
                 if (m_reuse_) { /*已经执行长按动作*/
                     m_keyTicks_ = {};
                     m_keyRepeat_ = {};
                     m_keyStep_ = {}; /*回到 0状态 判断按键*/
                     m_reuse_ = {};
-                    q_func()->longReleaseSignal(Mode::LongRelease,m_data_);
+                    q_func()->longReleaseSignal(ButtonMode::LongRelease,m_data_);
                 }else { /*未执行长按动作*/
                     m_keyStep_ = {};
                     if (!m_keyRepeat_){ m_lastTime_ = m_keyTicks_; }
                     ++m_keyRepeat_;
                 }
             }else if( m_getPin_() == m_level_ && m_reuse_ ){
-                q_func()->longPressHoldSignal(Mode::LongPressHold,m_data_);
+                q_func()->longPressHoldSignal(ButtonMode::LongPressHold,m_data_);
             }else {}
             break;
         }
@@ -118,11 +100,11 @@ inline void ButtonPrivate::exec_() {
     {
         /* 短按处理*/
         clearValue();
-        q_func()->shortClickedSignal(Mode::ShortClicked,m_data_);
+        q_func()->shortClickedSignal(ButtonMode::ShortClicked,m_data_);
     }else if ( calcResult < m_doubleClickTime_ && m_keyRepeat_ == m_doubleClickNum_ ){
         /*双击处理*/
         clearValue();
-        q_func()->doubleClickedSignal(Mode::DoubleClicked,m_data_);
+        q_func()->doubleClickedSignal(ButtonMode::DoubleClicked,m_data_);
     } else{
     }
 }
