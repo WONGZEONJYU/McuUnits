@@ -34,7 +34,7 @@ private:
     template<typename ...Args_> void create_(std::size_t ,void * ,void * ,Args_ && ...) noexcept;
     static void taskReturn() noexcept;
     void createTask(void(*f)(void*),std::size_t uxStackDepth,void * pvParameters,void * = {},void * = {}) noexcept;
-    XThreadBase() = default;
+    constexpr XThreadBase() = default;
     void setInfo(void *) noexcept;
     friend class XThreadDynamic;
     template<std::size_t > friend class XThreadStatic;
