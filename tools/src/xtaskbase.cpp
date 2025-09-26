@@ -22,18 +22,17 @@ void XTaskBase::stop() noexcept
 void XTaskBase::exit() noexcept
 { exit_(); }
 
-void XTaskBase::setPriority(const uint32_t &p) const noexcept
+void XTaskBase::setPriority(uint32_t const p) const noexcept
 { m_th_.setPriority(p); }
 
 void XTaskBase::setNext(XTaskBase * const next) noexcept
 { m_next_.store(next,std::memory_order_release); }
 
 void XTaskBase::next(void * const arg) noexcept {
-    if (auto const next_{m_next_.load(std::memory_order_acquire)}) {
+    if (auto const next_{ m_next_.load(std::memory_order_acquire) }) {
         next_->handleRequest(arg);
     }
 }
 
 XTaskBase::~XTaskBase()
-{ m_next_ = nullptr; stop_(); }
-
+{ m_next_.store({},std::memory_order_relaxed); stop_(); }

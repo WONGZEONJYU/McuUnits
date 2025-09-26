@@ -13,15 +13,15 @@ public:
     virtual void start(std::size_t stack_depth = 2048) noexcept;
     virtual void stop() noexcept;
     virtual void exit() noexcept;
-    void setPriority(const uint32_t &p) const noexcept;
+    void setPriority(uint32_t) const noexcept;
     void setNext(XTaskBase *) noexcept;
     virtual void next(void * ) noexcept;
     virtual void handleRequest(void *) {}
     virtual ~XTaskBase();
+    [[nodiscard]] bool isRunning() const noexcept;
 
 protected:
     explicit XTaskBase() = default;
-    bool isRunning() const noexcept;
 
 private:
     virtual void run() = 0;
