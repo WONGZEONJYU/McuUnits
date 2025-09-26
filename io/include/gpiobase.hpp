@@ -40,6 +40,8 @@ public:
     virtual void setSpeed(GPIOSpeed) const;
     [[nodiscard]] virtual GPIOSpeed speed() const;
     void setGPIO(void *,uint32_t) noexcept;
+    operator bool() const noexcept;
+    bool operator!() const noexcept;
 
 protected:
     explicit GPIOBase(void * = {},uint32_t = {});
@@ -49,8 +51,6 @@ protected:
     GPIOBase & operator=(GPIOBase && ) = default;
     void swap(GPIOBase &) noexcept;
     void copy(GPIOBase const &) noexcept;
-    operator bool() const noexcept;
-    bool operator!() const noexcept;
 };
 
 #endif
