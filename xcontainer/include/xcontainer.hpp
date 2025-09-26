@@ -123,6 +123,8 @@ inline namespace XContainer {
     template<typename Tp_>
     using XVector = std::vector< Tp_, XAllocator< Tp_ > >;
 
+    using XVectorBool = std::vector<bool,XAllocator< bool >>;
+
     using XUByteArray = XVector<uint8_t>;
 
     using XByteArray = XVector<char>;
