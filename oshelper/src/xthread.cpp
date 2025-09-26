@@ -19,53 +19,47 @@ bool XThreadBase::isRunningInThread() noexcept
 { return !static_cast<bool>(xPortIsInsideInterrupt()); }
 
 std::size_t XThreadBase::thread_count() noexcept
-{ return m_th_cnt_.load(std::memory_order_relaxed); }
+{ return m_th_cnt_.load(std::memory_order_acquire); }
 
 void * XThreadBase::thread_handle() const noexcept
 { return m_thread_.load(std::memory_order_acquire); }
 
 int XThreadBase::thread_id() const noexcept
-{ return m_id_.load(std::memory_order_relaxed); }
+{ return m_id_.load(std::memory_order_acquire); }
 
-void XThreadBase::start() const noexcept {
-    if (m_thread_.load(std::memory_order_relaxed)) {
-        vTaskResume(static_cast<TaskHandle_t>(m_thread_.load(std::memory_order_relaxed)));
-    }
-}
+#define TH auto const th { thread_handle() }
 
-void XThreadBase::stop() const noexcept {
-    if (m_thread_.load(std::memory_order_relaxed)) {
-        vTaskSuspend(static_cast<TaskHandle_t>(m_thread_.load(std::memory_order_relaxed)));
-    }
-}
+void XThreadBase::start() const noexcept
+{ TH;CHECK_EMPTY(th,return); vTaskResume(static_cast<TaskHandle_t>(th)); }
 
-void XThreadBase::setPriority(uint32_t const p) const noexcept {
-    if (m_thread_.load(std::memory_order_relaxed)) {
-        vTaskPrioritySet(static_cast<TaskHandle_t>(m_thread_.load(std::memory_order_relaxed)),p);
-    }
-}
+void XThreadBase::stop() const noexcept
+{ TH;CHECK_EMPTY(th,return); vTaskSuspend(static_cast<TaskHandle_t>(th)); }
+
+void XThreadBase::setPriority(uint32_t const p) const noexcept
+{ TH;CHECK_EMPTY(th,return); vTaskPrioritySet(static_cast<TaskHandle_t>(thread_handle()),p); }
 
 void XThreadBase::destroy() noexcept {
-    if (m_thread_.load(std::memory_order_relaxed)) {
-        vTaskSuspend(static_cast<TaskHandle_t>(m_thread_.load(std::memory_order_relaxed)));
-        vTaskDelete(static_cast<TaskHandle_t>(m_thread_.load(std::memory_order_relaxed)));
-        m_thread_.store({},std::memory_order_relaxed);
-    }
+    TH;CHECK_EMPTY(th,return);
+    vTaskSuspend(static_cast<TaskHandle_t>(th));
+    vTaskDelete(static_cast<TaskHandle_t>(th));
+    m_thread_.store({},std::memory_order_release);
 }
 
 XThreadBase::~XThreadBase()
 { destroy(); }
 
-void XThreadBase::setInfo(void * const th) {
+void XThreadBase::setInfo(void * const th) noexcept{
     if (th) {
-        auto const th_ { static_cast<tskTaskControlBlock*>(th) };
-        m_thread_.store(th_,std::memory_order_relaxed);
-        m_id_ = static_cast<int>(m_th_cnt_.fetch_add(1,std::memory_order_relaxed));
+        auto const th_{ static_cast<TaskHandle_t>(th) };
+        m_thread_.store(th_,std::memory_order_release);
+        auto const id{ m_th_cnt_.fetch_add(1,std::memory_order_release) };
+        m_id_.store(static_cast<int>(id),std::memory_order_release);
         vTaskSuspend(th_);
     }
 }
 
 void XThreadBase::swap(XThreadBase & o) noexcept {
+    TaskCriticalArea c;
     m_id_.store(o.m_id_.exchange(m_id_.load(std::memory_order_relaxed),std::memory_order_relaxed),std::memory_order_relaxed);
     m_thread_.store(o.m_thread_.exchange(m_thread_.load(std::memory_order_relaxed),std::memory_order_relaxed),std::memory_order_relaxed);
 }
@@ -97,7 +91,7 @@ void XThreadBase::createTask(void(*f)(void*)
 
 #if configSUPPORT_DYNAMIC_ALLOCATION > 0
 
-XThreadDynamic:: XThreadDynamic(XThreadDynamic && o) noexcept
+XThreadDynamic::XThreadDynamic(XThreadDynamic && o) noexcept
 { XThreadBase::swap(o);}
 
 XThreadDynamic & XThreadDynamic::operator=(XThreadDynamic && o) noexcept

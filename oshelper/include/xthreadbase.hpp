@@ -29,13 +29,13 @@ protected:
     void destroy() noexcept;
 
 private:
-    template <typename Tuple_, size_t... > static void Invoke_(void * ) noexcept;
-    template <typename Tuple_, size_t... Indices_> static constexpr auto GetInvoke_(std::index_sequence<Indices_...>) noexcept;
+    template <typename , size_t... > static void Invoke_(void * ) noexcept;
+    template <typename , size_t... Indices_> static constexpr auto GetInvoke_(std::index_sequence<Indices_...>) noexcept;
     template<typename ...Args_> void create_(std::size_t ,void * ,void * ,Args_ && ...) noexcept;
     static void taskReturn() noexcept;
     void createTask(void(*f)(void*),std::size_t uxStackDepth,void * pvParameters,void * = {},void * = {}) noexcept;
     XThreadBase() = default;
-    void setInfo(void *);
+    void setInfo(void *) noexcept;
     friend class XThreadDynamic;
     template<std::size_t > friend class XThreadStatic;
 };

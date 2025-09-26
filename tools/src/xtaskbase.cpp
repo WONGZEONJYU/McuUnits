@@ -1,22 +1,39 @@
 #include <xtaskbase.hpp>
 
-void XTaskBase::_stop_()
-{ Exit(); m_th_.stop();}
+void XTaskBase::stop_() noexcept
+{ exit(); m_th_.stop();}
 
-void XTaskBase::Strat() {
-    if (!m_th_.thread_handle()) {
-        m_th_ = XThreadDynamic(2048,&XTaskBase::Main,this);
-    }
-    m_is_exit_ = false;
+void XTaskBase::exit_() noexcept
+{ m_isRunning_.store({},std::memory_order_release); }
+
+void XTaskBase::start(std::size_t const stack_depth) noexcept {
+    if (!m_th_.thread_handle())
+    { m_th_ = XThreadDynamic(stack_depth,&XTaskBase::run,this); }
+    m_isRunning_.store(true,std::memory_order_release);
     m_th_.start();
 }
 
-void XTaskBase::Stop() {_stop_(); }
+bool XTaskBase::isRunning() const noexcept
+{ return m_isRunning_.load(std::memory_order_acquire); }
 
-void XTaskBase::Exit() { _exit_(); }
+void XTaskBase::stop() noexcept
+{ stop_(); }
 
-void XTaskBase::Set_Priority(const uint32_t &p) const noexcept
+void XTaskBase::exit() noexcept
+{ exit_(); }
+
+void XTaskBase::setPriority(const uint32_t &p) const noexcept
 { m_th_.setPriority(p); }
 
+void XTaskBase::setNext(XTaskBase * const next) noexcept
+{ m_next_.store(next,std::memory_order_release); }
+
+void XTaskBase::next(void * const arg) noexcept {
+    if (auto const next_{m_next_.load(std::memory_order_acquire)}) {
+        next_->handleRequest(arg);
+    }
+}
+
 XTaskBase::~XTaskBase()
-{ m_next_ = nullptr;_stop_(); }
+{ m_next_ = nullptr; stop_(); }
+
