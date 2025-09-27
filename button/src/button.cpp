@@ -5,10 +5,9 @@
 XSharedPtr<Button> Button::create(levelDetectFunc && f,bool const level
     ,void * const userdata,ButtonTime const & bv) noexcept
 {
-    auto const core {  ButtonCore::handle() };
+    auto const core { ButtonCore::handle() };
     CHECK_EMPTY(core,return {});
-    Parameter args {std::move(f),level,userdata,bv};
-    auto ret{ CreateSharedPtr({},std::forward<decltype(args)>(args)) };
+    auto const ret{ CreateSharedPtr({},Parameter { std::move(f),level,userdata,bv } ) };
     CHECK_EMPTY(ret,return {});
     core->push(ret);
     return ret;
