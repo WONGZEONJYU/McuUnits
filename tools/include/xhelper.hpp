@@ -71,4 +71,7 @@ public:
 
 #define CHECK_EMPTY(x,...) do { if(!x){__VA_ARGS__;} }while(false)
 
+enum class NonConst{};
+enum class Const{};
+
 #endif
