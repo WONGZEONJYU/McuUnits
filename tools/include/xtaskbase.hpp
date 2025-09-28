@@ -6,7 +6,6 @@
 class XTaskBase {
     X_DISABLE_COPY_MOVE(XTaskBase)
     XThreadDynamic m_th_;
-    std::atomic<XTaskBase*> m_next_{};
     std::atomic_bool m_isRunning_{};
 
 public:
@@ -14,9 +13,6 @@ public:
     virtual void stop() noexcept;
     virtual void exit() noexcept;
     void setPriority(uint32_t) const noexcept;
-    void setNext(XTaskBase *) noexcept;
-    virtual void next(void * ) noexcept;
-    virtual void handleRequest(void *) {}
     virtual ~XTaskBase();
     [[nodiscard]] bool isRunning() const noexcept;
 
