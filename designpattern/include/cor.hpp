@@ -19,9 +19,8 @@ public:
     { m_next_.storeRelease(next); }
 
     virtual void request(ParameterList const & args) const {
-        auto const next { dynamic_cast<XCOR<T,Args...> * >(m_next_.loadAcquire()) };
-        if (!next) { return; }
-        next->responseHandler(args);
+        if (auto const next { dynamic_cast<XCOR<T,Args...> * >(m_next_.loadAcquire()) })
+        { next->responseHandler(args); }
     }
 
     virtual ~XCORAbstract()
