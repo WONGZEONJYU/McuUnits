@@ -1,4 +1,4 @@
-#include <BinarySemaphore.hpp>
+#include <binarySemaphore.hpp>
 
 #if defined(FREERTOS) || defined(USE_FREERTOS)
 
