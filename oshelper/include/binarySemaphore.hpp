@@ -11,10 +11,10 @@
 
 class BinarySemaphore final {
     W_DISABLE_COPY_MOVE(BinarySemaphore)
-    mutable SemaphoreHandle_t m_BinarySemaphore{};
 #if configSUPPORT_STATIC_ALLOCATION > 0
-    mutable StaticSemaphore_t m_SemaphoreBuffer{};
+    mutable StaticSemaphore_t m_semaphore_{};
 #endif
+    mutable SemaphoreHandle_t m_semaphoreHandle_{};
 
 public:
     explicit BinarySemaphore();

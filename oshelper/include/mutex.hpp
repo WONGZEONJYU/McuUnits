@@ -8,8 +8,10 @@
 
 class Mutex final {
     W_DISABLE_COPY_MOVE(Mutex)
-    mutable SemaphoreHandle_t m_mtxHandle_{};
+#if configSUPPORT_STATIC_ALLOCATION > 0
     mutable StaticSemaphore_t m_semaphore_{};
+#endif
+    mutable SemaphoreHandle_t m_mtxHandle_{};
 
 public:
     explicit Mutex();

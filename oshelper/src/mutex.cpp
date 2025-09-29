@@ -2,7 +2,11 @@
 #include <mutex>
 
 Mutex::Mutex()
-:m_mtxHandle_{ xSemaphoreCreateMutexStatic(&m_semaphore_) }
+#if configSUPPORT_STATIC_ALLOCATION > 0
+    :m_mtxHandle_ { xSemaphoreCreateMutexStatic(&m_semaphore_) }
+#else
+    m_mtxHandle_ { xSemaphoreCreateMutex() }
+#endif
 {}
 
 Mutex::~Mutex()
