@@ -1,6 +1,7 @@
 #include <button.hpp>
 #include "button_p.hpp"
 #include <buttoncore.hpp>
+#include <xhelper.hpp>
 
 XSharedPtr<Button> Button::create(levelDetectFunc && f,bool const level
     ,void * const userdata,ButtonTime const & bv) noexcept

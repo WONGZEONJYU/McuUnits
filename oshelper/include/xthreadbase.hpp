@@ -6,12 +6,12 @@
 
 class XThreadBase {
 protected:
-    inline static std::atomic_size_t m_th_cnt_{};
-    std::atomic_int m_id_{-1};
-    std::atomic<void *> m_thread_{};
+    inline static XAtomicInteger<std::size_t> m_th_cnt_{};
+    XAtomicInt m_id_{-1};
+    XAtomicPointer<void> m_thread_{};
 
 public:
-    X_DISABLE_COPY(XThreadBase)
+    W_DISABLE_COPY(XThreadBase)
     static std::size_t thread_count() noexcept;
     [[nodiscard]] void * thread_handle() const noexcept;
     [[nodiscard]] int thread_id() const noexcept;

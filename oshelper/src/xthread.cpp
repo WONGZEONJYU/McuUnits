@@ -19,13 +19,13 @@ bool XThreadBase::isRunningInThread() noexcept
 { return !static_cast<bool>(xPortIsInsideInterrupt()); }
 
 std::size_t XThreadBase::thread_count() noexcept
-{ return m_th_cnt_.load(std::memory_order_acquire); }
+{ return m_th_cnt_.loadAcquire(); }
 
 void * XThreadBase::thread_handle() const noexcept
-{ return m_thread_.load(std::memory_order_acquire); }
+{ return m_thread_.loadAcquire(); }
 
 int XThreadBase::thread_id() const noexcept
-{ return m_id_.load(std::memory_order_acquire); }
+{ return m_id_.loadAcquire(); }
 
 #define TH auto const th { thread_handle() }
 
@@ -42,7 +42,7 @@ void XThreadBase::destroy() noexcept {
     TH;CHECK_EMPTY(th,return);
     vTaskSuspend(static_cast<TaskHandle_t>(th));
     vTaskDelete(static_cast<TaskHandle_t>(th));
-    m_thread_.store({},std::memory_order_release);
+    m_thread_.storeRelease({});
 }
 
 XThreadBase::~XThreadBase()
@@ -51,17 +51,21 @@ XThreadBase::~XThreadBase()
 void XThreadBase::setInfo(void * const th) noexcept{
     if (th) {
         auto const th_{ static_cast<TaskHandle_t>(th) };
-        m_thread_.store(th_,std::memory_order_release);
-        auto const id{ m_th_cnt_.fetch_add(1,std::memory_order_release) };
-        m_id_.store(static_cast<int>(id),std::memory_order_release);
+        m_thread_.storeRelease(th_);
+        auto const id { m_th_cnt_.fetchAndAddOrdered(1) };
+        m_id_.storeRelease(static_cast<int>(id));
         vTaskSuspend(th_);
     }
 }
 
 void XThreadBase::swap(XThreadBase & o) noexcept {
     TaskCriticalArea c;
-    m_id_.store(o.m_id_.exchange(m_id_.load(std::memory_order_relaxed),std::memory_order_relaxed),std::memory_order_relaxed);
-    m_thread_.store(o.m_thread_.exchange(m_thread_.load(std::memory_order_relaxed),std::memory_order_relaxed),std::memory_order_relaxed);
+    auto const id { m_id_.loadAcquire() };
+    auto const th{ m_thread_.loadAcquire() };
+    m_id_.storeRelease(o.m_id_.loadAcquire());
+    m_thread_.storeRelease(o.m_thread_.loadAcquire());
+    o.m_id_.storeRelease(id);
+    o.m_thread_.storeRelease(th);
 }
 
 void XThreadBase::createTask(void(*f)(void*)
@@ -71,7 +75,7 @@ void XThreadBase::createTask(void(*f)(void*)
                                 , void * const pxTaskBuffer) noexcept
 {
     XStringStream ss {};
-    ss << GET_STR(thread:) << m_th_cnt_.load(std::memory_order_relaxed);
+    ss << GET_STR(thread:) << m_th_cnt_.loadRelaxed();
     TaskCriticalArea c{};
 #if configSUPPORT_STATIC_ALLOCATION > 0
     if (puxStackBuffer && pxTaskBuffer) {

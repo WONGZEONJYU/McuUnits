@@ -4,9 +4,9 @@
 #include <xthread.hpp>
 
 class XTaskBase {
-    X_DISABLE_COPY_MOVE(XTaskBase)
+    W_DISABLE_COPY_MOVE(XTaskBase)
     XThreadDynamic m_th_;
-    std::atomic_bool m_isRunning_{};
+    XAtomicBool m_isRunning_{};
 
 public:
     virtual void start(std::size_t stack_depth = 2048) noexcept;

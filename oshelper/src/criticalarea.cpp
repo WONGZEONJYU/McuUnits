@@ -11,9 +11,9 @@ TaskCriticalArea::TaskCriticalArea() noexcept
 TaskCriticalArea::TaskCriticalArea(std::defer_lock_t) {}
 
 TaskCriticalArea::~TaskCriticalArea() {
-    for (auto i{ m_count_.load(std::memory_order_relaxed) }; i > 0; --i)
+    for (auto i{ m_count_.loadRelaxed() }; i > 0; --i)
     { taskEXIT_CRITICAL(); }
-    m_count_.store(0, std::memory_order_relaxed);
+    m_count_.storeRelaxed({});
 }
 
 TaskCriticalArea::TaskCriticalArea(TaskCriticalArea && o) noexcept
@@ -23,19 +23,22 @@ TaskCriticalArea& TaskCriticalArea::operator=(TaskCriticalArea && o) noexcept
 { TaskCriticalArea { std::move(o) }.swap(*this); return *this; }
 
 void TaskCriticalArea::enter() const noexcept {
-    m_count_.fetch_add(1, std::memory_order_relaxed);
+    m_count_.fetchAndAddOrdered(1);
     taskENTER_CRITICAL();
 }
 
 void TaskCriticalArea::exit() const noexcept {
-    if (m_count_.load(std::memory_order_relaxed) > 0) {
-        m_count_.fetch_sub(1, std::memory_order_relaxed);
+    if (m_count_.loadAcquire() > 0) {
+        m_count_.fetchAndSubOrdered(1);
         taskEXIT_CRITICAL();
     }
 }
 
-void TaskCriticalArea::swap(TaskCriticalArea const & o) const noexcept
-{ m_count_.exchange(o.m_count_.load(std::memory_order_relaxed),std::memory_order_relaxed); }
+void TaskCriticalArea::swap(TaskCriticalArea const & o) const noexcept {
+    auto const c{ m_count_.loadRelaxed() };
+    m_count_.storeRelease(c);
+    o.m_count_.storeRelease(c);
+}
 
 ISRCriticalArea::ISRCriticalArea() noexcept
 :m_save_(taskENTER_CRITICAL_FROM_ISR())

@@ -1,6 +1,7 @@
 #ifndef X_CONTAINER_HPP
 #define X_CONTAINER_HPP 1
 
+#include <wglobal.hpp>
 #include <xmemory.hpp>
 #include <algorithm>
 #include <vector>
@@ -13,19 +14,20 @@
 #include <deque>
 #include <memory>
 #include <sstream>
+#include <xatomic.hpp>
 
 inline namespace XContainer {
 
     template<typename T,std::size_t Size_>
     class CircularBuffer final {
 
-        X_DISABLE_COPY(CircularBuffer)
+        W_DISABLE_COPY(CircularBuffer)
 
         static_assert(Size_ > 0,"Size_ is less than or equal zero!");
 
         mutable std::array<T,Size_> m_buf_{};
 
-        mutable std::atomic_uint m_w_{},m_r_{};
+        mutable XAtomicInteger<std::size_t> m_w_{},m_r_{};
 
     public:
         using value_type = T;
@@ -40,24 +42,27 @@ inline namespace XContainer {
 
         void swap(CircularBuffer const & obj) noexcept {
             m_buf_.swap(obj.m_buf_);
-            m_w_ = obj.m_w_.exchange({});
-            m_r_ = obj.m_r_.exchange({});
+            auto const w { m_w_.loadRelaxed() }, r { m_r_.loadRelaxed() };
+            m_w_.storeRelease(obj.m_w_.loadAcquire());
+            m_r_.storeRelease(obj.m_r_.loadAcquire());
+            obj.m_w_.storeRelease(w);
+            obj.m_r_.storeRelease(r);
         }
 
         static auto capacity() noexcept
         { return Size_; }
 
         auto empty() const noexcept
-        { return m_w_.load(std::memory_order_relaxed) == m_r_.load(std::memory_order_relaxed); }
+        { return m_w_.loadRelaxed() == m_r_.loadRelaxed(); }
 
         auto full() const noexcept
-        { return Size_ == m_w_.load(std::memory_order_relaxed) - m_r_.load(std::memory_order_relaxed); }
+        { return Size_ == m_w_.loadRelaxed() - m_r_.loadRelaxed(); }
 
         [[nodiscard]] int64_t readableSize() const noexcept {
             if (empty()) { return {}; }
-            if (m_w_.load(std::memory_order_relaxed) > m_r_.load(std::memory_order_relaxed))
-                { return m_w_.load(std::memory_order_relaxed) - m_r_.load(std::memory_order_relaxed); }
-            return Size_ - m_r_.load(std::memory_order_relaxed) + m_w_.load(std::memory_order_relaxed);
+            if (m_w_.loadRelaxed() > m_r_.loadRelaxed())
+                { return m_w_.loadRelaxed() - m_r_.loadRelaxed(); }
+            return Size_ - m_r_.loadRelaxed() + m_w_.loadRelaxed();
         }
 
         [[nodiscard]] int64_t writableSize() const noexcept {
@@ -66,26 +71,26 @@ inline namespace XContainer {
         }
 
         void clear() const noexcept {
-            m_r_.store(0,std::memory_order_relaxed);
-            m_w_.store(0,std::memory_order_relaxed);
+            m_r_.storeRelease(0);
+            m_w_.storeRelease(0);
         }
 
         bool write(value_type const & d) const noexcept {
             if (full()) { return {}; }
-            m_buf_[m_w_.load(std::memory_order_relaxed) % Size_] = d;
-            m_w_.fetch_add(1,std::memory_order_relaxed);
+            m_buf_[m_w_.loadAcquire() % Size_] = d;
+            m_w_.ref();
             return true;
         }
 
         bool write(value_type && d) const noexcept {
             if (full()) { return {}; }
-            m_buf_[m_w_.load(std::memory_order_relaxed) % Size_] = std::move(d);
-            m_w_.fetch_add(1,std::memory_order_relaxed);
+            m_buf_[m_w_.loadAcquire() % Size_] = std::move(d);
+            m_w_.ref();
             return true;
         }
 
         int64_t write(const value_type * const d,std::size_t const s) const noexcept {
-            CHECK_EMPTY(d,return -1);
+            if (!d) { return -1; }
             if (full()) { return 0;}
             auto const canWrite{ std::min(static_cast<int64_t>(s),writableSize()) };
             int64_t c {};
@@ -95,13 +100,13 @@ inline namespace XContainer {
 
         bool read(value_type & d) const noexcept {
             if (empty()) { return {}; }
-            d = m_buf_[m_r_.load(std::memory_order_relaxed) % Size_];
-            m_r_.fetch_add(1,std::memory_order_relaxed);
+            d = m_buf_[m_r_.loadAcquire() % Size_];
+            m_r_.ref();
             return true;
         }
 
         int64_t read(value_type * const d,std::size_t const s) const noexcept {
-            CHECK_EMPTY(d,return -1);
+            if (!d) { return -1; }
             if (empty()) { return 0; }
             auto const canRead{ std::min(static_cast<int64_t>(s),readableSize()) };
             int64_t c {};
@@ -110,11 +115,11 @@ inline namespace XContainer {
         }
 
         int64_t peek(value_type * const d,std::size_t const s) const noexcept {
-            CHECK_EMPTY(d,return -1);
+            if (!d) { return -1; }
             if (empty()) { return 0; }
             auto const canRead{ std::min(static_cast<int64_t>(s),readableSize()) };
             int64_t c {};
-            auto pos{ m_r_.load(std::memory_order_relaxed) % Size_ };
+            auto pos{ m_r_.loadAcquire() % Size_ };
             for (;c < canRead;++c,++pos) { d[c] = m_buf_[pos]; }
             return c;
         }

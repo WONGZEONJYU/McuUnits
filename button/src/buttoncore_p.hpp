@@ -5,10 +5,12 @@
 #include <xcontainer.hpp>
 #include <button.hpp>
 #include <ranges>
+#include <xhelper.hpp>
 
 class ButtonCorePrivate final: public ButtonCoreData {
     W_DECLARE_PUBLIC(ButtonCore)
     XUnordered_map<void *,XSharedPtr<Button>> m_buttons{};
+
 public:
     explicit ButtonCorePrivate(ButtonCore * const o)
     { q_ptr = o; }

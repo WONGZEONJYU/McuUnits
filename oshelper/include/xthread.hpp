@@ -8,7 +8,8 @@
 #if configSUPPORT_DYNAMIC_ALLOCATION > 0
 
 class XThreadDynamic final : public XThreadBase {
-    X_DISABLE_COPY(XThreadDynamic)
+    W_DISABLE_COPY(XThreadDynamic)
+
 public:
     XThreadDynamic() = default;
 
@@ -29,7 +30,7 @@ public:
 
 template<std::size_t DEPTH>
 class XThreadStatic final : public XThreadBase {
-    X_DISABLE_COPY(XThreadStatic)
+    W_DISABLE_COPY(XThreadStatic)
     static_assert(DEPTH > 0,"DEPTH must be greater than 0");
     std::array<std::size_t, DEPTH> m_stack_{};
     StaticTask_t m_tcb_{};

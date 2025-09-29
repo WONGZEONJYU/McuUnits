@@ -1,8 +1,10 @@
 #ifndef XMEMORY_HPP
 #define XMEMORY_HPP 1
 
+#include <wglobal.hpp>
 #include <mutex>
-#include <xhelper.hpp>
+#include <memory>
+#include <xatomic.hpp>
 #if defined(FREERTOS) || defined(USE_FREERTOS)
 #include <FreeRTOS.h>
 #endif
@@ -84,13 +86,13 @@ inline namespace mem {
 
     template<typename Tp_> struct XDeleter<Tp_[]> {
     private:
-        mutable std::atomic_size_t m_length {};
+        mutable XAtomicInteger<std::size_t> m_length {};
 
         template<typename > friend struct XDeleter;
 
         template<typename U>
         constexpr void copy_(U const & o) noexcept
-        { m_length.store(o.m_length.load(std::memory_order_relaxed),std::memory_order_relaxed); }
+        { m_length.storeRelease(o.m_length.loadAcquire()); }
 
     public:
         using type = Tp_;
@@ -115,7 +117,7 @@ inline namespace mem {
         { copy_(o);return *this; }
 
         constexpr void setLength(std::size_t const length) const noexcept
-        { m_length.store(length,std::memory_order_relaxed); }
+        { m_length.storeRelease(length); }
 
         static constexpr void cleanup(void * const pointer) noexcept {
             static_assert(!std::is_void_v<value_type>
@@ -138,7 +140,7 @@ inline namespace mem {
             if constexpr (std::is_array_v<Up_>) {
                 std::ranges::destroy_at(pointer);
             }else {
-                std::ranges::destroy_n(pointer,m_length.load(std::memory_order_relaxed));
+                std::ranges::destroy_n(pointer,m_length.loadAcquire());
             }
             cleanup(pointer);
         }
@@ -569,7 +571,7 @@ inline namespace mem {
 
     protected:
         XSingleton() = default;
-        X_DISABLE_COPY_MOVE(XSingleton)
+        W_DISABLE_COPY_MOVE(XSingleton)
     };
 
 }
