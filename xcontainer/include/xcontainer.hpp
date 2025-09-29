@@ -210,6 +210,10 @@ inline namespace XContainer {
     constexpr auto append(Con_ & c , typename Con_::const_pointer const d,std::size_t const length) noexcept -> Con_ &
     { return append(c,std::ranges::subrange{d, d + length } ); }
 
+    XString trim(XString const & str) noexcept;
+
+    XStringVector split(XString const & str, char delimiter) noexcept;
+
 }
 
 #endif
