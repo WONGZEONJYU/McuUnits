@@ -2,6 +2,7 @@
 #define X_COR_HPP 1
 
 #include <wglobal.hpp>
+#include <xhelper.hpp>
 #include <xatomic.hpp>
 #include <tuple>
 

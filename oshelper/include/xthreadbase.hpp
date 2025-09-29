@@ -3,6 +3,7 @@
 
 #include <xhelper.hpp>
 #include <xcontainer.hpp>
+#include <functional>
 
 class XThreadBase {
 protected:

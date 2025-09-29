@@ -14,6 +14,7 @@
 #include <deque>
 #include <memory>
 #include <sstream>
+#include <charconv>
 #include <xatomic.hpp>
 
 inline namespace XContainer {
@@ -213,6 +214,29 @@ inline namespace XContainer {
     XString trim(XString const & str) noexcept;
 
     XStringVector split(XString const & str, char delimiter) noexcept;
+
+    template<typename T,typename STR>
+    std::optional<T> toNum(STR const & s,int const base = 10) noexcept {
+        T value{};
+        return std::from_chars(s.data(),s.data() + s.size(),value,base).ec == std::errc{}
+            ? std::optional<T>{value} : std::nullopt;
+    }
+
+    template<typename T>
+    std::optional<T> toNum(std::string_view const & s,int const base = 10) noexcept {
+        T value{};
+        return std::from_chars(s.data(),s.data() + s.size(),value,base).ec == std::errc{}
+        ? std::optional<T>{value} : std::nullopt;
+    }
+
+    template<typename StringStream,typename T>
+    auto toString(T const v,auto const precision = StringStream{}.precision()) noexcept
+        -> decltype(StringStream{}.str()) {
+        StringStream ss {};
+        ss.precision(precision);
+        ss << v;
+        return ss.str();
+    }
 
 }
 

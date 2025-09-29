@@ -1,55 +1,45 @@
 #ifndef XHELPER_HPP
 #define XHELPER_HPP 1
 
+#include <memory>
 #include <wglobal.hpp>
 #include <xatomic.hpp>
-#include <functional>
-#include <utility>
 
 #define FUNC_SIGNATURE __PRETTY_FUNCTION__
 
 #define GET_STR(args) #args
 
 template<typename F>
-class [[maybe_unused]] Destroyer final{
+class Destroyer {
     W_DISABLE_COPY(Destroyer)
-    F fn{};
+    F m_fn_{};
     XAtomicBool is_destroy{};
 
 public:
-    constexpr explicit Destroyer(F && f):fn(std::move(f)){}
+    constexpr explicit Destroyer(F && f)
+    :m_fn_ { std::forward<F>(f) } {}
 
-    constexpr void destroy() {
+    void destroy() noexcept {
         if (!is_destroy.loadRelaxed()) {
             is_destroy.storeRelaxed(true);
-            fn();
+            m_fn_();
         }
     }
 
-    constexpr ~Destroyer()
+    virtual ~Destroyer()
     { destroy(); }
 };
 
 template<typename F2>
-class XRAII final {
+class XRAII final : public Destroyer<F2> {
     W_DISABLE_COPY(XRAII)
-    F2 m_f2{};
-    XAtomicBool m_is_destroy{};
+    using Base = Destroyer<F2>;
 
 public:
     template<typename F1>
-    [[maybe_unused]] constexpr explicit XRAII(F1 && f1,F2 && f2): m_f2(std::move(f2))
+    constexpr explicit XRAII(F1 && f1,F2 && f2) : Base(std::forward<F2>(f2))
     { f1(); }
-
-    constexpr void destroy(){
-        if (!m_is_destroy.loadRelaxed()){
-            m_is_destroy.storeRelaxed(true);
-            m_f2();
-        }
-    }
-
-    constexpr ~XRAII()
-    { destroy(); }
+    ~XRAII() override = default;
 };
 
 #define CCMRAM __attribute__((section(".ccmram")))
