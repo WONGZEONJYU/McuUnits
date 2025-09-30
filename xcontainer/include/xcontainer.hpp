@@ -238,6 +238,69 @@ inline namespace XContainer {
         return ss.str();
     }
 
+    template<typename T>
+    concept StandardChar =
+        std::same_as<T, char>
+        || std::same_as<T, wchar_t>
+        || std::same_as<T, char8_t>
+        || std::same_as<T, char16_t>
+        || std::same_as<T, char32_t>;
+
+    template<typename T>
+    concept WritableCharRange =
+        std::ranges::range<T>
+        && StandardChar<std::ranges::range_value_t<T>>
+        && requires(T & t) { *t.begin() = typename T::value_type{}; };
+
+    template<
+        std::ranges::range Range,
+        typename Alloc = std::allocator<std::ranges::range_value_t<Range>>
+    >
+    requires StandardChar<std::ranges::range_value_t<Range>>
+    auto toLower(Range && r, const Alloc & = Alloc{}) noexcept{
+        using CharT = std::ranges::range_value_t<Range>;
+
+        if constexpr (WritableCharRange<Range>) {
+            // 可写 → 就地修改
+            std::ranges::transform(r, r.begin()
+                ,[]<typename T0>(T0 const ch) noexcept { return static_cast<T0>(std::tolower(ch)); });
+            return std::forward<Range>(r);
+        } else {
+            // 不可写 → 返回新的 basic_string
+            std::basic_string<CharT, std::char_traits<CharT>, Alloc> result{};
+            if constexpr (std::ranges::sized_range<Range>)
+            { result.reserve(std::ranges::size(r)); }
+
+            std::ranges::transform(r, std::back_inserter(result),
+                []<typename T0>(T0 const ch) noexcept { return static_cast<T0>(std::tolower(ch)); });
+            return result;
+        }
+    }
+
+    template<
+        std::ranges::range Range,
+        typename Alloc = std::allocator<std::ranges::range_value_t<Range>>
+    >
+    requires StandardChar<std::ranges::range_value_t<Range>>
+    auto toUpper(Range && r, const Alloc & = Alloc{}) noexcept{
+        using CharT = std::ranges::range_value_t<Range>;
+
+        if constexpr (WritableCharRange<Range>) {
+            // 可写 → 就地修改
+            std::ranges::transform(r, r.begin()
+                ,[]<typename T0>(T0 const ch) noexcept { return static_cast<T0>(std::toupper(ch)); });
+            return std::forward<Range>(r);
+        } else {
+            // 不可写 → 返回新的 basic_string
+            std::basic_string<CharT, std::char_traits<CharT>, Alloc> result{};
+            if constexpr (std::ranges::sized_range<Range>)
+            { result.reserve(std::ranges::size(r)); }
+
+            std::ranges::transform(r, std::back_inserter(result)
+                ,[]<typename T0>(T0 const ch) noexcept { return static_cast<T0>(std::toupper(ch)); });
+            return result;
+        }
+    }
 }
 
 #endif
