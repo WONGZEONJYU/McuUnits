@@ -33,15 +33,15 @@ inline namespace XContainer {
     public:
         using value_type = T;
 
-        explicit CircularBuffer() = default;
+        constexpr explicit CircularBuffer() = default;
 
-        CircularBuffer(CircularBuffer && obj) noexcept
+        constexpr CircularBuffer(CircularBuffer && obj) noexcept
         { swap(obj); }
 
-        CircularBuffer& operator=(CircularBuffer &&obj) noexcept
+        constexpr CircularBuffer& operator=(CircularBuffer &&obj) noexcept
         { CircularBuffer(obj).swap(*this); return *this; }
 
-        void swap(CircularBuffer const & obj) noexcept {
+        constexpr void swap(CircularBuffer const & obj) noexcept {
             m_buf_.swap(obj.m_buf_);
             auto const w { m_w_.loadRelaxed() }, r { m_r_.loadRelaxed() };
             m_w_.storeRelease(obj.m_w_.loadAcquire());
@@ -50,47 +50,47 @@ inline namespace XContainer {
             obj.m_r_.storeRelease(r);
         }
 
-        static auto capacity() noexcept
+        static constexpr auto capacity() noexcept
         { return Size_; }
 
-        auto empty() const noexcept
+        constexpr auto empty() const noexcept
         { return m_w_.loadRelaxed() == m_r_.loadRelaxed(); }
 
-        auto full() const noexcept
+        constexpr auto full() const noexcept
         { return Size_ == m_w_.loadRelaxed() - m_r_.loadRelaxed(); }
 
-        [[nodiscard]] int64_t readableSize() const noexcept {
+        [[nodiscard]] constexpr int64_t readableSize() const noexcept {
             if (empty()) { return {}; }
             if (m_w_.loadRelaxed() > m_r_.loadRelaxed())
                 { return m_w_.loadRelaxed() - m_r_.loadRelaxed(); }
             return Size_ - m_r_.loadRelaxed() + m_w_.loadRelaxed();
         }
 
-        [[nodiscard]] int64_t writableSize() const noexcept {
+        [[nodiscard]] constexpr int64_t writableSize() const noexcept {
             if (full()) { return int{}; }
             return Size_ - readableSize();
         }
 
-        void clear() const noexcept {
+        constexpr void clear() const noexcept {
             m_r_.storeRelease(0);
             m_w_.storeRelease(0);
         }
 
-        bool write(value_type const & d) const noexcept {
+        constexpr bool write(value_type const & d) const noexcept {
             if (full()) { return {}; }
             m_buf_[m_w_.loadAcquire() % Size_] = d;
             m_w_.ref();
             return true;
         }
 
-        bool write(value_type && d) const noexcept {
+        constexpr bool write(value_type && d) const noexcept {
             if (full()) { return {}; }
             m_buf_[m_w_.loadAcquire() % Size_] = std::move(d);
             m_w_.ref();
             return true;
         }
 
-        int64_t write(const value_type * const d,std::size_t const s) const noexcept {
+        constexpr int64_t write(const value_type * const d,std::size_t const s) const noexcept {
             if (!d) { return -1; }
             if (full()) { return 0;}
             auto const canWrite{ std::min(static_cast<int64_t>(s),writableSize()) };
@@ -99,14 +99,14 @@ inline namespace XContainer {
             return c;
         }
 
-        bool read(value_type & d) const noexcept {
+        constexpr bool read(value_type & d) const noexcept {
             if (empty()) { return {}; }
             d = m_buf_[m_r_.loadAcquire() % Size_];
             m_r_.ref();
             return true;
         }
 
-        int64_t read(value_type * const d,std::size_t const s) const noexcept {
+        constexpr int64_t read(value_type * const d,std::size_t const s) const noexcept {
             if (!d) { return -1; }
             if (empty()) { return 0; }
             auto const canRead{ std::min(static_cast<int64_t>(s),readableSize()) };
@@ -115,7 +115,7 @@ inline namespace XContainer {
             return c;
         }
 
-        int64_t peek(value_type * const d,std::size_t const s) const noexcept {
+        constexpr int64_t peek(value_type * const d,std::size_t const s) const noexcept {
             if (!d) { return -1; }
             if (empty()) { return 0; }
             auto const canRead{ std::min(static_cast<int64_t>(s),readableSize()) };
@@ -216,21 +216,21 @@ inline namespace XContainer {
     XStringVector split(XString const & str, char delimiter) noexcept;
 
     template<typename T,typename STR>
-    std::optional<T> toNum(STR const & s,int const base = 10) noexcept {
+    constexpr std::optional<T> toNum(STR const & s,int const base = 10) noexcept {
         T value{};
         return std::from_chars(s.data(),s.data() + s.size(),value,base).ec == std::errc{}
             ? std::optional<T>{value} : std::nullopt;
     }
 
     template<typename T>
-    std::optional<T> toNum(std::string_view const & s,int const base = 10) noexcept {
+    constexpr std::optional<T> toNum(std::string_view const & s,int const base = 10) noexcept {
         T value{};
         return std::from_chars(s.data(),s.data() + s.size(),value,base).ec == std::errc{}
         ? std::optional<T>{value} : std::nullopt;
     }
 
     template<typename StringStream,typename T>
-    auto toString(T const v,auto const precision = StringStream{}.precision()) noexcept
+    constexpr auto toString(T const v,auto const precision = StringStream{}.precision()) noexcept
         -> decltype(StringStream{}.str()) {
         StringStream ss {};
         ss.precision(precision);
@@ -257,7 +257,7 @@ inline namespace XContainer {
         typename Alloc = std::allocator<std::ranges::range_value_t<Range>>
     >
     requires StandardChar<std::ranges::range_value_t<Range>>
-    auto toLower(Range && r, const Alloc & = Alloc{}) noexcept{
+    constexpr auto toLower(Range && r, const Alloc & = Alloc{}) noexcept{
         using CharT = std::ranges::range_value_t<Range>;
 
         if constexpr (WritableCharRange<Range>) {
@@ -282,7 +282,7 @@ inline namespace XContainer {
         typename Alloc = std::allocator<std::ranges::range_value_t<Range>>
     >
     requires StandardChar<std::ranges::range_value_t<Range>>
-    auto toUpper(Range && r, const Alloc & = Alloc{}) noexcept{
+    constexpr auto toUpper(Range && r, const Alloc & = Alloc{}) noexcept{
         using CharT = std::ranges::range_value_t<Range>;
 
         if constexpr (WritableCharRange<Range>) {

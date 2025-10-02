@@ -48,9 +48,9 @@ inline namespace mem {
         static void deallocate(value_type * const p,size_t) noexcept
         { free(p); }
 #endif
-        friend bool operator==(const XAllocator &, const XAllocator &) noexcept
+        friend constexpr bool operator==(const XAllocator &, const XAllocator &) noexcept
         { return true; }
-        friend bool operator!=(const XAllocator &, const XAllocator &) noexcept
+        friend constexpr bool operator!=(const XAllocator &, const XAllocator &) noexcept
         { return false; }
     };
 
@@ -63,7 +63,7 @@ inline namespace mem {
 
         constexpr XDeleter() = default;
 
-        ~XDeleter() = default;
+        constexpr ~XDeleter() = default;
 
         template<typename U> requires std::is_convertible_v<U * ,Tp_ *>
         constexpr XDeleter(XDeleter<U> const &) {}
@@ -100,7 +100,7 @@ inline namespace mem {
 
         constexpr XDeleter() = default;
 
-        ~XDeleter() = default;
+        constexpr ~XDeleter() = default;
 
         template<typename U> requires std::is_constructible_v<U(*)[],Tp_(*)[]>
         constexpr XDeleter(XDeleter<U[]> const & o) noexcept
@@ -216,9 +216,9 @@ inline namespace mem {
             static_assert(std::is_object_v<Object>,"typename Object don't Object type");
 
             template<typename T>
-            static char test( void (T::*)() ){return {};}
+            static constexpr char test( void (T::*)() ){return {};}
 
-            static int test( void (Object::*)() ){return {};}
+            static constexpr int test( void (Object::*)() ){return {};}
         public:
             enum { value = sizeof(test(&Object::checkFriendXTwoPhaseConstruction_)) == sizeof(int) };
         };
@@ -232,21 +232,21 @@ inline namespace mem {
             static_assert(std::is_object_v<Object>,"typename Object don't Object type");
         #if __cplusplus >= 202002L
             template<typename O,typename ...A>
-            static auto test(int) -> std::true_type
+            static constexpr auto test(int) -> std::true_type
                 requires ( ( sizeof( std::declval<O>().construct_( ( std::declval< std::decay_t< A > >() )... ) )
                     > static_cast<std::size_t>(0) ) )
             {return {} ;}
         #else
             #if 0 //只能二选一
                 template<typename O,typename ...A>
-                static auto test(int)
+                static constexpr auto test(int)
                     -> std::enable_if_t< ( sizeof(std::declval<O>().construct_( (std::declval< std::decay_t< A > >())...) )
                         > static_cast<std::size_t>(0) )
                         ,std::true_type >
             {return {};}
             #else
                 template<typename O,typename ...A>
-                static auto test(int)
+                static constexpr auto test(int)
                 -> decltype( sizeof( std::declval<O>().construct_( (std::declval< std::decay_t< A > >())...) )
                     > static_cast<std::size_t>(0)
                         , std::true_type{} )
@@ -254,7 +254,7 @@ inline namespace mem {
             #endif
         #endif
             template<typename ...>
-            static auto test(...) -> std::false_type {return {};}
+            static constexpr auto test(...) -> std::false_type {return {};}
         public:
             enum { value = decltype(test<Object,Args...>(0))::value };
         };
@@ -268,7 +268,7 @@ inline namespace mem {
         private:
         #if __cplusplus >= 202002L
             template<typename O,typename ...A>
-            static auto test(int) -> std::false_type
+            static constexpr auto test(int) -> std::false_type
                 requires (
                     ( sizeof( std::declval<O>().construct_( std::declval< std::decay_t< A > >()...) ) > static_cast<std::size_t>(0) )
                         || std::is_same_v< decltype( std::declval<O>().construct_( std::declval< std::decay_t< A > >()...) ),void >
@@ -277,14 +277,14 @@ inline namespace mem {
         #else
             #if 0 //只能二选一
                 template<typename O,typename ...A>
-                static auto test(int)
+                static constexpr auto test(int)
                     -> std::enable_if_t< std::is_same_v< decltype( std::declval<O>().construct_( (std::declval< std::decay_t< A > >())...) ) ,void >
                          || ( sizeof( std::declval<O>().construct_( (std::declval< std::decay_t< A > >())...) ) > static_cast<std::size_t>(0) )
                             ,std::false_type >
             {return {} ;}
             #else
                 template<typename O,typename ...A>
-                static auto test(int)
+                static constexpr auto test(int)
                     -> decltype( std::is_same_v< decltype(std::declval<O>().construct_((std::declval< std::decay_t< A > >())...)), void >
                         || ( sizeof( std::declval<O>().construct_( (std::declval< std::decay_t< A > >())... ) ) > static_cast<std::size_t>(0) )
                             ,std::false_type {} )
@@ -293,7 +293,7 @@ inline namespace mem {
         #endif
 
             template<typename ...>
-            static auto test(...) ->std::true_type {return {} ;}
+            static constexpr auto test(...) ->std::true_type {return {} ;}
         public:
             enum { value = decltype(test<Object,Args...>(0))::value };
         };
@@ -362,11 +362,11 @@ inline namespace mem {
             static_assert(std::is_object_v<Object>,"typename Object don't Object type");
 
             template<typename O>
-            static auto test(int) -> decltype(std::declval<O>().~O(),std::false_type{})
+            static constexpr auto test(int) -> decltype(std::declval<O>().~O(),std::false_type{})
             {return {};}
 
             template<typename >
-            static auto test(...) -> std::true_type
+            static constexpr auto test(...) -> std::true_type
             {return {};}
 
         public:

@@ -16,29 +16,29 @@ class XCORAbstract {
 public:
     using Arguments = std::tuple<Args...>;
 
-    void setNextResponse(XCORAbstract * const next) const noexcept
+    constexpr void setNextResponse(XCORAbstract * const next) const noexcept
     { m_next_.storeRelease(next); }
 
-    virtual void request(Arguments const & args) const {
+    constexpr virtual void request(Arguments const & args) const {
         if (auto const next { dynamic_cast<XCOR<Const,Args...> * >(m_next_.loadAcquire()) })
         { next->responseHandler(args); return ; }
         if (auto const next { dynamic_cast<XCOR<NonConst,Args...> * >(m_next_.loadAcquire()) })
         { next->responseHandler(args); }
     }
 
-    virtual ~XCORAbstract()
+    constexpr virtual ~XCORAbstract()
     { m_next_.storeRelease({}); }
 
-    XCORAbstract(XCORAbstract && o) noexcept
+    constexpr XCORAbstract(XCORAbstract && o) noexcept
     { swap(o); }
 
-    XCORAbstract& operator=(XCORAbstract && o) noexcept
+    constexpr XCORAbstract& operator=(XCORAbstract && o) noexcept
     { XCORAbstract {std::move(o)}.swap(*this); return *this; }
 
 private:
-    XCORAbstract() = default;
+    constexpr XCORAbstract() = default;
 
-    void swap(XCORAbstract const & o) const noexcept {
+    constexpr void swap(XCORAbstract const & o) const noexcept {
         auto const self { m_next_.loadAcquire() };
         m_next_.storeRelease(o.m_next_.loadAcquire());
         o.m_next_.storeRelease(self);
@@ -54,12 +54,12 @@ class XCOR<Const,Args...> : public XCORAbstract<Args...> {
 public:
     using Arguments = XCORAbstract<Args...>::Arguments;
     constexpr XCOR() = default;
-    XCOR(XCOR && ) = default;
-    XCOR & operator=(XCOR && ) = default;
-    ~XCOR() override = default;
+    constexpr XCOR(XCOR && ) = default;
+    constexpr XCOR & operator=(XCOR && ) = default;
+    constexpr ~XCOR() override = default;
 
 protected:
-    virtual void responseHandler(Arguments const &) const {}
+    constexpr virtual void responseHandler(Arguments const &) const {}
 };
 
 template<typename ... Args>
@@ -69,12 +69,12 @@ class XCOR<NonConst,Args...> : public XCORAbstract<Args...> {
 public:
     using Arguments = XCORAbstract<Args...>::Arguments;
     constexpr XCOR() = default;
-    XCOR(XCOR && ) = default;
-    XCOR & operator=(XCOR && ) = default;
-    ~XCOR() override = default;
+    constexpr XCOR(XCOR && ) = default;
+    constexpr XCOR & operator=(XCOR && ) = default;
+    constexpr ~XCOR() override = default;
 
 protected:
-    virtual void responseHandler(Arguments const &) {}
+    constexpr virtual void responseHandler(Arguments const &) {}
 };
 
 #endif

@@ -29,26 +29,26 @@ public:
 #endif
     { if (desired < 0 || desired > max()) { std::abort(); } }
 
-    ~CountingSemaphore()
+    constexpr ~CountingSemaphore()
     { vSemaphoreDelete(m_semaphoreHandle_); }
     /**
      * 获取信号量
      * @param wait -1永远阻塞,0不阻塞,greater than 0 等待wait毫秒
      * @return true or false
      */
-    [[nodiscard]] bool acquire(int64_t const wait = -1) const noexcept
+    [[nodiscard]] constexpr bool acquire(int64_t const wait = -1) const noexcept
     { return static_cast<bool>(xSemaphoreTake(m_semaphoreHandle_,wait < 0 ? portMAX_DELAY : static_cast<TickType_t>(wait))); }
 
-    [[nodiscard]] bool acquireFromISR() const noexcept {
+    [[nodiscard]] constexpr bool acquireFromISR() const noexcept {
         BaseType_t x{},b { xSemaphoreTakeFromISR( m_semaphoreHandle_,&x) };
         portYIELD_FROM_ISR(x);
         return static_cast<bool>(b);
     }
 
-    [[nodiscard]] bool releases() const noexcept
+    [[nodiscard]] constexpr bool releases() const noexcept
     { return static_cast<bool>(xSemaphoreGive(m_semaphoreHandle_)); }
 
-    [[nodiscard]] bool releasesFromISR() const noexcept {
+    [[nodiscard]] constexpr bool releasesFromISR() const noexcept {
         BaseType_t x{},b{ xSemaphoreGiveFromISR(m_semaphoreHandle_,&x) };
         portYIELD_FROM_ISR(x);
         return static_cast<bool>(b);
