@@ -1,7 +1,6 @@
 #ifndef X_THREAD_P_HPP
 #define X_THREAD_P_HPP 1
 
-#include <xhelper.hpp>
 #include <xcontainer.hpp>
 #include <functional>
 
@@ -30,9 +29,9 @@ protected:
     void destroy() noexcept;
 
 private:
-    template <typename , size_t... > static void Invoke_(void * ) noexcept;
+    template <typename , size_t... > static constexpr void Invoke_(void * ) noexcept;
     template <typename , size_t... Indices_> static constexpr auto GetInvoke_(std::index_sequence<Indices_...>) noexcept;
-    template<typename ...Args_> void create_(std::size_t ,void * ,void * ,Args_ && ...) noexcept;
+    template<typename ...Args_> constexpr void create_(std::size_t ,void * ,void * ,Args_ && ...) noexcept;
     static void taskReturn() noexcept;
     void createTask(void(*f)(void*),std::size_t uxStackDepth,void * pvParameters,void * = {},void * = {}) noexcept;
     constexpr XThreadBase() = default;
@@ -42,7 +41,7 @@ private:
 };
 
 template <typename Tuple_, size_t... Indices_>
-void XThreadBase::Invoke_(void * const RawVals_) noexcept {
+constexpr void XThreadBase::Invoke_(void * const RawVals_) noexcept {
     XUniquePtr<Tuple_> const FnVals_(static_cast<Tuple_*>(RawVals_));
     auto & Tup_ {*FnVals_};
     std::invoke(std::get<Indices_>(std::forward<Tuple_>(Tup_))...);
@@ -54,7 +53,7 @@ constexpr auto XThreadBase::GetInvoke_(std::index_sequence<Indices_...>) noexcep
 { return &Invoke_<Tuple_, Indices_...>; }
 
 template<typename ...Args_>
-void XThreadBase::create_(std::size_t const stack_depth,void * const puxStackBuffer
+constexpr void XThreadBase::create_(std::size_t const stack_depth,void * const puxStackBuffer
     ,void * const pxTaskBuffer,Args_ && ...args) noexcept
 {
     using Tuple_ = std::tuple<std::decay_t<Args_>...>;
