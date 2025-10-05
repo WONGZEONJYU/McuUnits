@@ -9,9 +9,9 @@ class XTaskBase {
     XAtomicBool m_isRunning_{};
 
 public:
-    virtual void start(std::size_t stack_depth = 2048) noexcept;
-    virtual void stop() noexcept;
-    virtual void exit() noexcept;
+    void start(std::size_t stack_depth = 2048) noexcept;
+    void stop() noexcept;
+    void exit() noexcept;
     void setPriority(uint32_t) const noexcept;
     virtual ~XTaskBase();
     [[nodiscard]] bool isRunning() const noexcept;
