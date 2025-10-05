@@ -1,5 +1,6 @@
 #include <xthread.hpp>
 #include <criticalarea.hpp>
+#include <xhelper.hpp>
 #if defined(FREERTOS) || defined(USE_FREERTOS)
 #include <task.h>
 
