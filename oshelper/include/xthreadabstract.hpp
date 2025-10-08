@@ -4,14 +4,14 @@
 #include <xcontainer.hpp>
 #include <functional>
 
-class XThreadBase {
+class XThreadAbstract {
 protected:
     inline static XAtomicInteger<std::size_t> m_th_cnt_{};
     XAtomicInt m_id_{-1};
     XAtomicPointer<void> m_thread_{};
 
 public:
-    W_DISABLE_COPY(XThreadBase)
+    W_DISABLE_COPY(XThreadAbstract)
     static std::size_t thread_count() noexcept;
     [[nodiscard]] void * thread_handle() const noexcept;
     [[nodiscard]] int thread_id() const noexcept;
@@ -24,8 +24,8 @@ public:
     static bool isRunningInThread() noexcept;
 
 protected:
-    virtual ~XThreadBase();
-    virtual void swap(XThreadBase & ) noexcept;
+    virtual ~XThreadAbstract();
+    virtual void swap(XThreadAbstract & ) noexcept;
     void destroy() noexcept;
 
 private:
@@ -34,14 +34,14 @@ private:
     template<typename ...Args_> constexpr void create_(std::size_t ,void * ,void * ,Args_ && ...) noexcept;
     static void taskReturn() noexcept;
     void createTask(void(*f)(void*),std::size_t uxStackDepth,void * pvParameters,void * = {},void * = {}) noexcept;
-    constexpr XThreadBase() = default;
+    constexpr XThreadAbstract() = default;
     void setInfo(void *) noexcept;
     friend class XThreadDynamic;
     template<std::size_t > friend class XThreadStatic;
 };
 
 template <typename Tuple_, size_t... Indices_>
-constexpr void XThreadBase::Invoke_(void * const RawVals_) noexcept {
+constexpr void XThreadAbstract::Invoke_(void * const RawVals_) noexcept {
     XUniquePtr<Tuple_> const FnVals_(static_cast<Tuple_*>(RawVals_));
     auto & Tup_ {*FnVals_};
     std::invoke(std::get<Indices_>(std::forward<Tuple_>(Tup_))...);
@@ -49,11 +49,11 @@ constexpr void XThreadBase::Invoke_(void * const RawVals_) noexcept {
 }
 
 template <typename Tuple_, size_t... Indices_>
-constexpr auto XThreadBase::GetInvoke_(std::index_sequence<Indices_...>) noexcept
+constexpr auto XThreadAbstract::GetInvoke_(std::index_sequence<Indices_...>) noexcept
 { return &Invoke_<Tuple_, Indices_...>; }
 
 template<typename ...Args_>
-constexpr void XThreadBase::create_(std::size_t const stack_depth,void * const puxStackBuffer
+constexpr void XThreadAbstract::create_(std::size_t const stack_depth,void * const puxStackBuffer
     ,void * const pxTaskBuffer,Args_ && ...args) noexcept
 {
     using Tuple_ = std::tuple<std::decay_t<Args_>...>;

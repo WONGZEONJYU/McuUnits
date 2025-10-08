@@ -1,13 +1,13 @@
 #ifndef X_THREAD_HPP
 #define X_THREAD_HPP
 
-#include <xthreadbase.hpp>
+#include <xthreadabstract.hpp>
 #if defined(FREERTOS) || defined(USE_FREERTOS)
 #include <FreeRTOS.h>
 
 #if configSUPPORT_DYNAMIC_ALLOCATION > 0
 
-class XThreadDynamic final : public XThreadBase {
+class XThreadDynamic final : public XThreadAbstract {
     W_DISABLE_COPY(XThreadDynamic)
 
 public:
@@ -29,7 +29,7 @@ public:
 #if configSUPPORT_STATIC_ALLOCATION > 0
 
 template<std::size_t DEPTH>
-class XThreadStatic final : public XThreadBase {
+class XThreadStatic final : public XThreadAbstract {
     W_DISABLE_COPY(XThreadStatic)
     static_assert(DEPTH > 0,"DEPTH must be greater than 0");
     std::array<std::size_t, DEPTH> m_stack_{};
@@ -51,8 +51,8 @@ public:
     { XThreadStatic{std::move(o)}.swap(*this); return *this; }
 
 private:
-    void swap(XThreadBase & o) noexcept override {
-        XThreadBase::swap(o);
+    void swap(XThreadAbstract & o) noexcept override {
+        XThreadAbstract::swap(o);
         m_stack_.swap(static_cast<XThreadStatic &>(o).m_stack_);
         std::swap(m_tcb_,static_cast<XThreadStatic &>(o).m_tcb_);
     }

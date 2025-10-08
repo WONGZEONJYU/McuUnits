@@ -4,52 +4,52 @@
 #if defined(FREERTOS) || defined(USE_FREERTOS)
 #include <task.h>
 
-void XThreadBase::taskReturn() noexcept
+void XThreadAbstract::taskReturn() noexcept
 { vTaskDelete(nullptr); }
 
-void XThreadBase::sleep_for(std::size_t const ms) noexcept
+void XThreadAbstract::sleep_for(std::size_t const ms) noexcept
 { vTaskDelay(ms); }
 
-void XThreadBase::sleep_until(std::size_t & pre,std::size_t const ms) noexcept
+void XThreadAbstract::sleep_until(std::size_t & pre,std::size_t const ms) noexcept
 { vTaskDelayUntil(reinterpret_cast<TickType_t*>(&pre),ms); }
 
-void XThreadBase::yield() noexcept
+void XThreadAbstract::yield() noexcept
 { taskYIELD();}
 
-bool XThreadBase::isRunningInThread() noexcept
+bool XThreadAbstract::isRunningInThread() noexcept
 { return !static_cast<bool>(xPortIsInsideInterrupt()); }
 
-std::size_t XThreadBase::thread_count() noexcept
+std::size_t XThreadAbstract::thread_count() noexcept
 { return m_th_cnt_.loadAcquire(); }
 
-void * XThreadBase::thread_handle() const noexcept
+void * XThreadAbstract::thread_handle() const noexcept
 { return m_thread_.loadAcquire(); }
 
-int XThreadBase::thread_id() const noexcept
+int XThreadAbstract::thread_id() const noexcept
 { return m_id_.loadAcquire(); }
 
 #define TH auto const th { thread_handle() }
 
-void XThreadBase::start() const noexcept
+void XThreadAbstract::start() const noexcept
 { TH;CHECK_EMPTY(th,return); vTaskResume(static_cast<TaskHandle_t>(th)); }
 
-void XThreadBase::stop() const noexcept
+void XThreadAbstract::stop() const noexcept
 { TH;CHECK_EMPTY(th,return); vTaskSuspend(static_cast<TaskHandle_t>(th)); }
 
-void XThreadBase::setPriority(uint32_t const p) const noexcept
+void XThreadAbstract::setPriority(uint32_t const p) const noexcept
 { TH;CHECK_EMPTY(th,return); vTaskPrioritySet(static_cast<TaskHandle_t>(thread_handle()),p); }
 
-void XThreadBase::destroy() noexcept {
+void XThreadAbstract::destroy() noexcept {
     TH;CHECK_EMPTY(th,return);
     vTaskSuspend(static_cast<TaskHandle_t>(th));
     vTaskDelete(static_cast<TaskHandle_t>(th));
     m_thread_.storeRelease({});
 }
 
-XThreadBase::~XThreadBase()
+XThreadAbstract::~XThreadAbstract()
 { destroy(); }
 
-void XThreadBase::setInfo(void * const th) noexcept{
+void XThreadAbstract::setInfo(void * const th) noexcept{
     if (th) {
         auto const th_{ static_cast<TaskHandle_t>(th) };
         m_thread_.storeRelease(th_);
@@ -59,7 +59,7 @@ void XThreadBase::setInfo(void * const th) noexcept{
     }
 }
 
-void XThreadBase::swap(XThreadBase & o) noexcept {
+void XThreadAbstract::swap(XThreadAbstract & o) noexcept {
     TaskCriticalArea c;
     auto const id { m_id_.loadAcquire() };
     auto const th{ m_thread_.loadAcquire() };
@@ -69,7 +69,7 @@ void XThreadBase::swap(XThreadBase & o) noexcept {
     o.m_thread_.storeRelease(th);
 }
 
-void XThreadBase::createTask(void(*f)(void*)
+void XThreadAbstract::createTask(void(*f)(void*)
                                 , std::size_t const uxStackDepth
                                 , void * const pvParameters
                                 , void * const puxStackBuffer
@@ -97,7 +97,7 @@ void XThreadBase::createTask(void(*f)(void*)
 #if configSUPPORT_DYNAMIC_ALLOCATION > 0
 
 XThreadDynamic::XThreadDynamic(XThreadDynamic && o) noexcept
-{ XThreadBase::swap(o);}
+{ XThreadAbstract::swap(o);}
 
 XThreadDynamic & XThreadDynamic::operator=(XThreadDynamic && o) noexcept
 { XThreadDynamic{std::move(o)}.swap(*this); return *this; }
