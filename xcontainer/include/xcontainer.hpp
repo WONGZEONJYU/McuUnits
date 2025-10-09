@@ -14,6 +14,7 @@
 #include <deque>
 #include <memory>
 #include <sstream>
+#include <string>
 #include <charconv>
 #include <xatomic.hpp>
 
