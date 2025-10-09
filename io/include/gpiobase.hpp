@@ -1,6 +1,7 @@
 #ifndef GPIO_BASE_HPP
 #define GPIO_BASE_HPP 1
 
+#include <optional>
 #include <xmemory.hpp>
 
 enum class GPIOMode : int {
@@ -30,7 +31,7 @@ public:
     virtual void set() const = 0;
     virtual void reset() const = 0;
     virtual void toggle() const = 0;
-    [[nodiscard]] virtual bool read(bool * = {}) const = 0;
+    [[nodiscard]] virtual std::optional<bool> read() const = 0;
     virtual void setMode(GPIOMode) const;
     virtual void setPull(GPIOPull) const;
     [[nodiscard]] virtual GPIOMode mode() const;
