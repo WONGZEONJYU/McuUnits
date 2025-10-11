@@ -10,7 +10,7 @@ class Button;
 
 class ButtonCoreData {
 protected:
-    ButtonCoreData() = default;
+    constexpr ButtonCoreData() = default;
 public:
     virtual ~ButtonCoreData() = default;
     ButtonCore * q_ptr{};

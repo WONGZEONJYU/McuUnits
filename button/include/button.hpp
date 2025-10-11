@@ -48,7 +48,8 @@ using levelDetectFunc = std::function<bool()>;
 
 class ButtonData {
 protected:
-    ButtonData() = default;
+    constexpr ButtonData() = default;
+
 public:
     virtual ~ButtonData() = default;
     Button * q_ptr{};
