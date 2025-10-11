@@ -514,7 +514,7 @@ inline namespace mem {
                 ,std::forward< decltype( args2 ) >( args2 ) ) ,Deleter{} };
         }
     protected:
-        XTwoPhaseConstruction() = default;
+        constexpr XTwoPhaseConstruction() = default;
         template<typename ,typename > friend class XSingleton;
     };
 
@@ -570,7 +570,7 @@ inline namespace mem {
         }
 
     protected:
-        XSingleton() = default;
+        constexpr XSingleton() = default;
         W_DISABLE_COPY_MOVE(XSingleton)
     };
 

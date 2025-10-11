@@ -54,7 +54,7 @@ public:
     Button * q_ptr{};
 };
 
-class Button final : public WObject ,XTwoPhaseConstruction<Button> {
+class Button final : public WObject ,mem::XTwoPhaseConstruction<Button> {
     W_DISABLE_COPY_MOVE(Button)
     W_DECLARE_PRIVATE_D(m_d_ptr_,Button)
     X_TWO_PHASE_CONSTRUCTION_CLASS

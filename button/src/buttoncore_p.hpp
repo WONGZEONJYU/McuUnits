@@ -12,24 +12,12 @@ class ButtonCorePrivate final: public ButtonCoreData {
     XUnordered_map<void *,XSharedPtr<Button>> m_buttons{};
 
 public:
-    explicit ButtonCorePrivate(ButtonCore * const o)
+    constexpr explicit ButtonCorePrivate(ButtonCore * const o)
     { q_ptr = o; }
     ~ButtonCorePrivate() override = default;
     void addButton(XSharedPtr<Button> const &) noexcept;
     void removeButton(void *) noexcept;
     void exec() const noexcept;
 };
-
-inline void ButtonCorePrivate::addButton(XSharedPtr<Button> const & b) noexcept
-{ CHECK_EMPTY(b,return);m_buttons[b.get()] = b; }
-
-inline void ButtonCorePrivate::removeButton(void * const d) noexcept
-{ CHECK_EMPTY(d,return); m_buttons.erase(d); }
-
-inline void ButtonCorePrivate::exec() const noexcept {
-    for (const auto & v : m_buttons | std::views::values) {
-        v->exec_();
-    }
-}
 
 #endif

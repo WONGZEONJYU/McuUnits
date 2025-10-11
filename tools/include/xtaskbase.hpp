@@ -17,7 +17,7 @@ public:
     [[nodiscard]] bool isRunning() const noexcept;
 
 protected:
-    explicit XTaskBase() = default;
+    constexpr explicit XTaskBase() = default;
 
 private:
     virtual void run() = 0;

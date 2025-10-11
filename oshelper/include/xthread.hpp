@@ -11,9 +11,9 @@ class XThreadDynamic final : public XThreadAbstract {
     W_DISABLE_COPY(XThreadDynamic)
 
 public:
-    XThreadDynamic() = default;
+    constexpr XThreadDynamic() = default;
 
-    ~XThreadDynamic() override = default;
+    constexpr ~XThreadDynamic() override = default;
 
     template<typename ...Args_>
     explicit XThreadDynamic(std::size_t const stack_depth,Args_ && ...args) noexcept
@@ -36,22 +36,22 @@ class XThreadStatic final : public XThreadAbstract {
     StaticTask_t m_tcb_{};
 
 public:
-    XThreadStatic() = default;
+    constexpr XThreadStatic() = default;
 
-    ~XThreadStatic() override = default;
+    constexpr ~XThreadStatic() override = default;
 
     template<typename ...Args_>
-    explicit XThreadStatic(Args_ && ...args) noexcept
+    constexpr explicit XThreadStatic(Args_ && ...args) noexcept
     { create_(DEPTH,m_stack_.data(),std::addressof(m_tcb_),std::forward<Args_>(args)...); }
 
-    XThreadStatic(XThreadStatic && o) noexcept
+    constexpr XThreadStatic(XThreadStatic && o) noexcept
     { swap(o); }
 
-    XThreadStatic & operator=(XThreadStatic && o) noexcept
+    constexpr XThreadStatic & operator=(XThreadStatic && o) noexcept
     { XThreadStatic{std::move(o)}.swap(*this); return *this; }
 
 private:
-    void swap(XThreadAbstract & o) noexcept override {
+    constexpr void swap(XThreadAbstract & o) noexcept override {
         XThreadAbstract::swap(o);
         m_stack_.swap(static_cast<XThreadStatic &>(o).m_stack_);
         std::swap(m_tcb_,static_cast<XThreadStatic &>(o).m_tcb_);

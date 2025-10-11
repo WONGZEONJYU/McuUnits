@@ -1,5 +1,14 @@
 #include "buttoncore_p.hpp"
 
+void ButtonCorePrivate::addButton(XSharedPtr<Button> const & b) noexcept
+{ CHECK_EMPTY(b,return);m_buttons[b.get()] = b; }
+
+void ButtonCorePrivate::removeButton(void * const d) noexcept
+{ CHECK_EMPTY(d,return); m_buttons.erase(d); }
+
+void ButtonCorePrivate::exec() const noexcept
+{ for (const auto & v : m_buttons | std::views::values) { v->exec_(); } }
+
 ButtonCore * ButtonCore::handle() noexcept
 { return UniqueConstruction().get(); }
 

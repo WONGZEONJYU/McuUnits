@@ -19,7 +19,7 @@ public:
     constexpr void setNextResponse(XCORAbstract * const next) const noexcept
     { m_next_.storeRelease(next); }
 
-    constexpr virtual void request(Arguments && args) const {
+    virtual void request(Arguments && args) const {
         if (auto const next { dynamic_cast<XCOR<Const,Args...> * >(m_next_.loadAcquire()) })
         { next->responseHandler(std::forward<decltype(args)>(args)); return ; }
         if (auto const next { dynamic_cast<XCOR<NonConst,Args...> * >(m_next_.loadAcquire()) })
@@ -59,7 +59,7 @@ public:
     constexpr ~XCOR() override = default;
 
 protected:
-    constexpr virtual void responseHandler(Arguments &&) const {}
+    virtual void responseHandler(Arguments &&) const {}
 };
 
 template<typename ... Args>
@@ -74,7 +74,7 @@ public:
     constexpr ~XCOR() override = default;
 
 protected:
-    constexpr virtual void responseHandler(Arguments &&) {}
+    virtual void responseHandler(Arguments &&) {}
 };
 
 #endif

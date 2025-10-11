@@ -21,6 +21,7 @@ class ButtonCore final : XSingleton<ButtonCore> {
     W_DECLARE_PRIVATE_D(m_d_ptr_,ButtonCore)
     X_TWO_PHASE_CONSTRUCTION_CLASS
     XUniquePtr<ButtonCoreData> m_d_ptr_{};
+
 public:
     static ButtonCore * handle() noexcept;
     void exec() noexcept;
