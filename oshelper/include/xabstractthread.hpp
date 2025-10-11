@@ -1,17 +1,17 @@
 #ifndef X_THREAD_P_HPP
 #define X_THREAD_P_HPP 1
 
-#include <xcontainer.hpp>
+#include <xmemory.hpp>
 #include <functional>
 
-class XThreadAbstract {
+class XAbstractThread {
 protected:
     inline static XAtomicInteger<std::size_t> m_th_cnt_{};
     XAtomicInt m_id_{-1};
     XAtomicPointer<void> m_thread_{};
 
 public:
-    W_DISABLE_COPY(XThreadAbstract)
+    W_DISABLE_COPY(XAbstractThread)
     static std::size_t thread_count() noexcept;
     [[nodiscard]] void * thread_handle() const noexcept;
     [[nodiscard]] int thread_id() const noexcept;
@@ -24,8 +24,8 @@ public:
     static bool isRunningInThread() noexcept;
 
 protected:
-    virtual ~XThreadAbstract();
-    virtual void swap(XThreadAbstract & ) noexcept;
+    virtual ~XAbstractThread();
+    virtual void swap(XAbstractThread & ) noexcept;
     void destroy() noexcept;
 
 private:
@@ -34,14 +34,14 @@ private:
     template<typename ...Args_> constexpr void create_(std::size_t ,void * ,void * ,Args_ && ...) noexcept;
     static void taskReturn() noexcept;
     void createTask(void(*f)(void*),std::size_t uxStackDepth,void * pvParameters,void * = {},void * = {}) noexcept;
-    constexpr XThreadAbstract() = default;
+    constexpr XAbstractThread() = default;
     void setInfo(void *) noexcept;
     friend class XThreadDynamic;
     template<std::size_t > friend class XThreadStatic;
 };
 
 template <typename Tuple_, size_t... Indices_>
-constexpr void XThreadAbstract::Invoke_(void * const RawVals_) noexcept {
+constexpr void XAbstractThread::Invoke_(void * const RawVals_) noexcept {
     XUniquePtr<Tuple_> const FnVals_(static_cast<Tuple_*>(RawVals_));
     auto & Tup_ {*FnVals_};
     std::invoke(std::get<Indices_>(std::forward<Tuple_>(Tup_))...);
@@ -49,11 +49,11 @@ constexpr void XThreadAbstract::Invoke_(void * const RawVals_) noexcept {
 }
 
 template <typename Tuple_, size_t... Indices_>
-constexpr auto XThreadAbstract::GetInvoke_(std::index_sequence<Indices_...>) noexcept
+constexpr auto XAbstractThread::GetInvoke_(std::index_sequence<Indices_...>) noexcept
 { return &Invoke_<Tuple_, Indices_...>; }
 
 template<typename ...Args_>
-constexpr void XThreadAbstract::create_(std::size_t const stack_depth,void * const puxStackBuffer
+constexpr void XAbstractThread::create_(std::size_t const stack_depth,void * const puxStackBuffer
     ,void * const pxTaskBuffer,Args_ && ...args) noexcept
 {
     using Tuple_ = std::tuple<std::decay_t<Args_>...>;
