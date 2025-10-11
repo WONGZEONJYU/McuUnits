@@ -13,10 +13,10 @@
 #include <unordered_set>
 #include <deque>
 #include <memory>
+#include <array>
 #include <sstream>
 #include <string>
 #include <charconv>
-#include <xatomic.hpp>
 
 inline namespace XContainer {
 
