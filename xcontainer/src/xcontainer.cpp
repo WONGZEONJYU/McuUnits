@@ -14,9 +14,8 @@ inline namespace XContainer
     XStringVector split(XString const & str, char const delimiter) noexcept {
         XIStringStream ss {str};
         XStringVector tokens {};
-        for (XString token {};std::getline(ss, token, delimiter);) {
-            tokens.push_back(std::move(token));
-        }
+        for (XString token {};std::getline(ss, token, delimiter);)
+        { tokens.push_back(std::move(token)); }
         return tokens;
     }
 }
