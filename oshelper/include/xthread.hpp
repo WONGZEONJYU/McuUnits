@@ -13,7 +13,7 @@ class XThreadDynamic final : public XThreadAbstract {
 public:
     constexpr XThreadDynamic() = default;
 
-    constexpr ~XThreadDynamic() override = default;
+    ~XThreadDynamic() override = default;
 
     template<typename ...Args_>
     explicit XThreadDynamic(std::size_t const stack_depth,Args_ && ...args) noexcept
