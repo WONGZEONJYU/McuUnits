@@ -59,7 +59,7 @@ public:
     constexpr ~XCOR() override = default;
 
 protected:
-    virtual void responseHandler(Arguments &&) const {}
+    constexpr virtual void responseHandler(Arguments &&) const {}
 };
 
 template<typename ... Args>
@@ -74,7 +74,7 @@ public:
     constexpr ~XCOR() override = default;
 
 protected:
-    virtual void responseHandler(Arguments &&) {}
+    constexpr virtual void responseHandler(Arguments &&) {}
 };
 
 #endif
