@@ -9,7 +9,7 @@
 
 class ButtonCorePrivate final: public ButtonCoreData {
     W_DECLARE_PUBLIC(ButtonCore)
-    XMap<void *,XSharedPtr<Button>> m_buttons{};
+    XUnordered_map<void *,XSharedPtr<Button>> m_buttons{};
 
 public:
     constexpr explicit ButtonCorePrivate(ButtonCore * const o)
