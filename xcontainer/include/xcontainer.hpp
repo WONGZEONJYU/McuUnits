@@ -94,7 +94,7 @@ inline namespace XContainer {
         constexpr int64_t write(const value_type * const d,std::size_t const s) const noexcept {
             if (!d) { return -1; }
             if (full()) { return 0;}
-            auto const canWrite{ std::min(static_cast<int64_t>(s),writableSize()) };
+            auto const canWrite{ std::ranges::min(static_cast<int64_t>(s),writableSize()) };
             int64_t c {};
             for (;c < canWrite;++c) { if (!write(d[c])) { break; } }
             return c;
@@ -110,7 +110,7 @@ inline namespace XContainer {
         constexpr int64_t read(value_type * const d,std::size_t const s) const noexcept {
             if (!d) { return -1; }
             if (empty()) { return 0; }
-            auto const canRead{ std::min(static_cast<int64_t>(s),readableSize()) };
+            auto const canRead{ std::ranges::min(static_cast<int64_t>(s),readableSize()) };
             int64_t c {};
             for (;c < canRead;++c) { if (!read(d[c])){ break; } }
             return c;
@@ -119,10 +119,10 @@ inline namespace XContainer {
         constexpr int64_t peek(value_type * const d,std::size_t const s) const noexcept {
             if (!d) { return -1; }
             if (empty()) { return 0; }
-            auto const canRead{ std::min(static_cast<int64_t>(s),readableSize()) };
+            auto const canRead{ std::ranges::min(static_cast<int64_t>(s),readableSize()) };
             int64_t c {};
-            auto pos{ m_r_.loadAcquire() % Size_ };
-            for (;c < canRead;++c,++pos) { d[c] = m_buf_[pos]; }
+            for (auto pos{ m_r_.loadAcquire() % Size_ };c < canRead;++c,++pos)
+                { d[c] = m_buf_[pos]; }
             return c;
         }
     };
