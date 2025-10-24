@@ -9,15 +9,15 @@
 
 #define GET_STR(args) #args
 
-template<typename F>
+template<typename D>
 class Destroyer {
     W_DISABLE_COPY(Destroyer)
-    F m_fn_{};
+    D m_fn_{};
     XAtomicBool is_destroy{};
 
 public:
-    constexpr explicit Destroyer(F && f)
-    :m_fn_ { std::forward<F>(f) } {}
+    constexpr explicit Destroyer(D && f)
+    :m_fn_ { std::forward<D>(f) } {}
 
     void destroy() noexcept {
         if (!is_destroy.loadRelaxed()) {
@@ -30,15 +30,16 @@ public:
     { destroy(); }
 };
 
-template<typename F2>
-class XRAII final : public Destroyer<F2> {
+template<typename D>
+class XRAII final : public Destroyer<D> {
     W_DISABLE_COPY(XRAII)
-    using Base = Destroyer<F2>;
+    using Base = Destroyer<D>;
 
 public:
-    template<typename F1>
-    constexpr explicit XRAII(F1 && f1,F2 && f2) : Base(std::forward<F2>(f2))
-    { f1(); }
+    template<typename C>
+    constexpr explicit XRAII(C && f1,D && f2)
+    : Base(std::forward<D>(f2)) { f1(); }
+
     ~XRAII() override = default;
 };
 
