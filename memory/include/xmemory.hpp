@@ -4,25 +4,14 @@
 #include <wglobal.hpp>
 #include <mutex>
 #include <memory>
+#include <xtypetraits.hpp>
+#include <xutility.hpp>
 #include <xatomic.hpp>
 #if defined(FREERTOS) || defined(USE_FREERTOS)
 #include <FreeRTOS.h>
 #endif
 
 inline namespace mem {
-
-    // 计算多维数组中单个元素的总数
-    template<typename T>
-    constexpr size_t calculate_total_elements() {
-        if constexpr (std::is_array_v<T>) {
-            constexpr auto current_extent{std::extent_v<T, 0>};
-            return current_extent > 0
-                ? current_extent * calculate_total_elements<std::remove_extent_t<T>>()
-                : calculate_total_elements<std::remove_extent_t<T>>();
-        } else {
-            return 1;
-        }
-    }
 
     template<typename Tp_> struct XAllocator {
 
@@ -156,7 +145,7 @@ inline namespace mem {
     constexpr void makeUnique(Args && ...) noexcept = delete;
 
     template<typename Tp_,typename ...Args,typename Ret = XUniquePtr<Tp_>>
-    requires ( std::negation_v< std::is_array<Tp_> > )
+        requires ( std::negation_v< std::is_array<Tp_> > )
     constexpr auto makeUnique(Args && ...args) noexcept -> Ret {
         auto const rawPtr { static_cast<Tp_ *>(pvPortMalloc(sizeof(Tp_))) };
         if(!rawPtr) { return {}; }
@@ -164,7 +153,7 @@ inline namespace mem {
     }
 
     template<typename Tp_,typename Ret = XUniquePtr<Tp_> >
-    requires ( std::is_array_v<Tp_> && !std::extent_v<Tp_> )
+        requires ( std::is_array_v<Tp_> && !std::extent_v<Tp_> )
     constexpr auto makeUnique(std::size_t const n) noexcept -> Ret {
         using Up_ = std::remove_all_extents_t<Tp_>;
 
@@ -184,31 +173,41 @@ inline namespace mem {
     }
 
     template<typename Tp_,typename Ret = XSharedPtr<Tp_> ,typename ...Args>
-    requires (std::negation_v<std::is_array<Tp_>>)
+        requires (std::negation_v<std::is_array<Tp_>>)
     constexpr auto makeShared(Args && ...args) noexcept -> Ret
     { return std::allocate_shared<Tp_>(XAllocator<Ret>{}, std::forward<Args>(args)...); }
 
     template<typename Tp_ ,typename Ret = XSharedPtr<Tp_> >
-    requires (std::is_unbounded_array_v<Tp_>)
+        requires (std::is_unbounded_array_v<Tp_>)
     constexpr auto makeShared(std::size_t const n) noexcept -> Ret
     { return std::allocate_shared<Tp_>(XAllocator<Tp_>{},n); }
 
     template<typename Tp_ ,typename Ret = XSharedPtr<Tp_> >
-    requires (std::is_unbounded_array_v<Tp_>)
+        requires (std::is_unbounded_array_v<Tp_>)
     constexpr auto makeShared(std::size_t const n ,std::remove_all_extents_t<Tp_> const & u) noexcept -> Ret
     { return std::allocate_shared<Tp_>(XAllocator<Tp_>{},n,u); }
 
     template<typename Tp_ ,typename Ret = XSharedPtr<Tp_> >
-    requires (std::is_bounded_array_v<Tp_>)
+        requires (std::is_bounded_array_v<Tp_>)
     constexpr auto makeShared() noexcept -> Ret
     { return std::allocate_shared<Tp_>(XAllocator<Tp_>{}); }
 
     template<typename Tp_ ,typename Ret = XSharedPtr<Tp_> >
-    requires (std::is_bounded_array_v<Tp_>)
+        requires (std::is_bounded_array_v<Tp_>)
     constexpr auto makeShared(std::remove_all_extents_t<Tp_> const & u) noexcept ->Ret
     { return std::allocate_shared<Tp_>(XAllocator<Tp_>{},u); }
 
     namespace XPrivate {
+
+        template<typename Tuple_> requires (is_tuple_v<Tuple_>)
+        static constexpr auto indices(Tuple_ &&) noexcept
+            -> std::make_index_sequence< std::tuple_size_v< std::decay_t< Tuple_ > > >
+        { return {}; }
+
+        template<typename Tuple_> requires (is_tuple_v<Tuple_>)
+        static constexpr auto indices() noexcept
+            -> std::make_index_sequence< std::tuple_size_v< std::decay_t< Tuple_ > > >
+        { return {}; }
 
         template<typename Object>
         struct Has_X_TwoPhaseConstruction_CLASS_Macro {
@@ -219,6 +218,7 @@ inline namespace mem {
             static constexpr char test( void (T::*)() ){return {};}
 
             static constexpr int test( void (Object::*)() ){return {};}
+
         public:
             enum { value = sizeof(test(&Object::checkFriendXTwoPhaseConstruction_)) == sizeof(int) };
         };
@@ -226,76 +226,86 @@ inline namespace mem {
         template<typename Object>
         inline constexpr bool Has_X_TwoPhaseConstruction_CLASS_Macro_v { Has_X_TwoPhaseConstruction_CLASS_Macro<Object>::value };
 
-        template<typename Object,typename ...Args>
+        template<typename Object,typename Tuple>
         struct Has_construct_Func {
         private:
             static_assert(std::is_object_v<Object>,"typename Object don't Object type");
-            template<typename O,typename ...A>
-            static constexpr auto test(int) -> std::true_type
-                requires ( ( sizeof( std::declval<O>().construct_( ( std::declval< std::decay_t< A > >() )... ) )
+            static_assert(is_tuple_v<Tuple>,"typename Tuple don't std::tuple type");
+
+            template<typename O,typename Tuple_,std::size_t ...I>
+            static constexpr auto test(std::index_sequence<I...> ) noexcept -> std::true_type
+                requires ( ( sizeof( std::declval<O>().construct_( ( std::declval< std::decay_t< std::tuple_element_t<I,Tuple_> > >() )... ) )
                     > static_cast<std::size_t>(0) ) )
-            {return {} ;}
+            { return {};}
 
             template<typename ...>
-            static constexpr auto test(...) -> std::false_type {return {};}
+            static constexpr auto test(...) noexcept -> std::false_type
+            { return {}; }
+
         public:
-            enum { value = decltype(test<Object,Args...>(0))::value };
+            enum { value = decltype(test<Object,Tuple>(indices<Tuple>()))::value };
         };
 
         template<typename ...Args>
         inline constexpr bool Has_construct_Func_v {Has_construct_Func<Args...>::value};
 
-        template<typename Object,typename ...Args>
+        template<typename Object,typename Tuple>
         struct is_private_mem_func {
-            static_assert(std::is_object_v<Object>,"typename Object don't Object type");
         private:
-            template<typename O,typename ...A>
-            static constexpr auto test(int) -> std::false_type
+            static_assert(std::is_object_v<Object>,"typename Object don't Object type");
+            static_assert(is_tuple_v<Tuple>,"typename Tuple don't std::tuple type");
+
+            template<typename O,typename Tuple_,std::size_t ...I>
+            static constexpr auto test(std::index_sequence<I...>) noexcept -> std::false_type
                 requires (
-                    ( sizeof( std::declval<O>().construct_( std::declval< std::decay_t< A > >()...) ) > static_cast<std::size_t>(0) )
-                        || std::is_same_v< decltype( std::declval<O>().construct_( std::declval< std::decay_t< A > >()...) ),void >
+                    ( sizeof( std::declval<O>().construct_( std::declval< std::decay_t< std::tuple_element_t<I,Tuple_> > >()...) ) > static_cast<std::size_t>(0) )
+                        || std::is_same_v< decltype( std::declval<O>().construct_( std::declval< std::decay_t< std::tuple_element_t<I,Tuple_> > >()...) ),void >
                 )
-            {return {} ;}
+            { return {}; }
 
             template<typename ...>
-            static constexpr auto test(...) ->std::true_type {return {} ;}
+            static constexpr auto test(...) noexcept -> std::true_type
+            { return {}; }
+
         public:
-            enum { value = decltype(test<Object,Args...>(0))::value };
+            enum { value = decltype(test<Object,Tuple>(indices<Tuple>()))::value };
         };
 
         template<typename ...Args>
         inline constexpr bool is_private_mem_func_v{ is_private_mem_func<Args...>::value };
 
-        template<typename T, typename... Args>
+        template<typename Object, typename Tuple>
         struct is_default_constructor_accessible {
         private:
-            enum {
-                result = std::disjunction_v< std::is_constructible< T, std::decay_t< Args >... >
-                        ,std::is_nothrow_constructible< T ,std::decay_t<Args>... >
-                        ,std::is_trivially_constructible< T ,std::decay_t<Args>... >
-                >
-            };
+            static_assert(std::is_object_v<Object>,"typename Object don't Object type");
+            static_assert(is_tuple_v<Tuple>,"typename Tuple don't std::tuple type");
 
-            template<typename > struct is_copy_move_constructor {
-                enum { value = false };
-            };
+            template<typename O,typename Tuple_,std::size_t ...I>
+            static constexpr auto result(std::index_sequence<I...>) noexcept {
+                return std::disjunction_v< std::is_constructible< O, std::decay_t< std::tuple_element_t<I,Tuple_> >... >
+                        ,std::is_nothrow_constructible< O ,std::decay_t< std::tuple_element_t<I,Tuple_> >... >
+                        ,std::is_trivially_constructible< O ,std::decay_t< std::tuple_element_t<I,Tuple_> >... >
+                >;
+            }
 
-            template<typename ...AS> requires(sizeof...(AS) == 1)
-            struct is_copy_move_constructor<std::tuple<AS...>> {
-                using Tuple_ = std::tuple<AS...>;
+            template<typename > struct is_copy_move_constructor
+            { enum { value = false }; };
+
+            template<typename Tuple_> requires(std::tuple_size_v<Tuple_> == 1)
+            struct is_copy_move_constructor<Tuple_> {
                 using First_ = std::tuple_element_t<0, Tuple_>;
                 enum {
                     value = std::disjunction_v<
-                        std::is_same<First_, T &>,
-                        std::is_same<First_, const T &>,
-                        std::is_same<First_, T &&>,
-                        std::is_same<First_, const T &&>
+                        std::is_same<First_, Object &>,
+                        std::is_same<First_, const Object &>,
+                        std::is_same<First_, Object &&>,
+                        std::is_same<First_, const Object &&>
                     >
                 };
             };
 
         public:
-            enum {value = result && !is_copy_move_constructor<std::tuple<Args...>>::value};
+            enum {value = result<Object,Tuple>(indices<Tuple>()) && !is_copy_move_constructor<Tuple>::value};
         };
 
         template<typename ...Args>
@@ -307,12 +317,12 @@ inline namespace mem {
             static_assert(std::is_object_v<Object>,"typename Object don't Object type");
 
             template<typename O>
-            static constexpr auto test(int) -> decltype(std::declval<O>().~O(),std::false_type{})
-            {return {};}
+            static constexpr auto test(int) noexcept -> decltype(std::declval<O>().~O(),std::false_type{})
+            { return {}; }
 
             template<typename >
-            static constexpr auto test(...) -> std::true_type
-            {return {};}
+            static constexpr auto test(...) noexcept -> std::true_type
+            { return {}; }
 
         public:
             enum {value = decltype(test<Object>(0))::value };
@@ -321,22 +331,31 @@ inline namespace mem {
         template<typename Object>
         inline constexpr bool is_destructor_private_v { is_destructor_private<Object>::value };
 
-    #define STATIC_ASSERT_P \
+        template<typename T, typename U>
+        constexpr bool operator==(const XAllocator <T>&, const XAllocator <U>&) noexcept
+        { return true; }
+
+        template<typename T, typename U>
+        constexpr bool operator!=(const XAllocator <T>&, const XAllocator <U>&) noexcept
+        { return false; }
+
+#define STATIC_ASSERT_P \
         static_assert( std::is_object_v< Object >,"typename Object is not an class or struct" ); \
-                            \
+                                \
         static_assert( std::is_final_v< Object > ,"Object must be a final class" ); \
-                            \
+                                \
         static_assert( XPrivate::Has_X_TwoPhaseConstruction_CLASS_Macro_v< Object > \
-                ,"No X_HELPER_CLASS in the class!" ); \
-                            \
-        static_assert( XPrivate::Has_construct_Func_v< Object ,std::decay_t<Args2>... > \
-                ,"bool Object::construct_(...) non static member function absent!" ); \
-                            \
-        static_assert( XPrivate::is_private_mem_func_v< Object ,std::decay_t<Args2>... > \
-                ,"bool Object::construct_(...) must be a private non static member function!" ); \
-                            \
-        static_assert( !XPrivate::is_default_constructor_accessible_v< Object ,std::decay_t< Args1 >... > \
-                ,"The Object (...) constructor (non copy and non move) must be a private member function!" );
+        ,"No X_HELPER_CLASS in the class!" ); \
+                                \
+        static_assert( XPrivate::Has_construct_Func_v< Object ,ArgsList2 > \
+        ,"bool Object::construct_(...) non static member function absent!" ); \
+                                \
+        static_assert( XPrivate::is_private_mem_func_v< Object ,ArgsList2 > \
+        ,"bool Object::construct_(...) must be a private non static member function!" ); \
+                                \
+        static_assert( !XPrivate::is_default_constructor_accessible_v< Object ,ArgsList1 > \
+        ,"The Object (...) constructor (non copy and non move) must be a private member function!" );
+
     } //namespace XPrivate;
 
     template<typename Tp_, typename = XAllocator< std::decay_t< std::remove_cvref_t<Tp_> > > >
@@ -358,11 +377,6 @@ inline namespace mem {
 
         inline static Allocator sm_allocator_{};
 
-        template<typename Tuple_>
-        static constexpr auto indices(Tuple_ &&) noexcept
-            -> std::make_index_sequence< std::tuple_size_v< std::decay_t< Tuple_ > > >
-        { return {}; }
-
     protected:
         template<typename Type> struct Destructor_ {
 
@@ -378,13 +392,12 @@ inline namespace mem {
             static constexpr void cleanup(value_type * const pointer) noexcept {
                 static_assert(sizeof(Object_t) > static_cast<std::size_t>(0)
                         ,"Object must be a complete type!");
-                if (pointer) {
-                    // 先调用析构函数
-                    pointer->~value_type();
-                    // 然后使用默认分配器释放内存 (静态函数无法访问成员分配器)
-                    allocator_type alloc{};
-                    std::allocator_traits<allocator_type>::deallocate(alloc, pointer, 1);
-                }
+                if (!pointer) { return; }
+                // 先调用析构函数
+                pointer->~value_type();
+                // 然后使用默认分配器释放内存 (静态函数无法访问成员分配器)
+                allocator_type alloc{};
+                std::allocator_traits<allocator_type>::deallocate(alloc, pointer, 1);
             }
 
             constexpr void operator()(value_type * const pointer) const noexcept
@@ -403,27 +416,25 @@ inline namespace mem {
 
         // 为裸指针提供专门的删除函数
         static constexpr void Delete(Object * const pointer) noexcept {
-            if (pointer) {
-                // 先调用析构函数
-                pointer->~Object();
-                // 使用分配器释放内存
-                std::allocator_traits<Allocator>::deallocate(sm_allocator_, pointer, 1);
-            }
+            if (!pointer) { return; }
+            // 先调用析构函数
+            pointer->~Object();
+            // 使用分配器释放内存
+            std::allocator_traits<Allocator>::deallocate(sm_allocator_, pointer, 1);
         }
 
         constexpr void operator delete(void * const ptr, std::size_t const length ) noexcept {
-            if (ptr) {
-                std::allocator_traits<Allocator>::deallocate(sm_allocator_,static_cast<Object *>(ptr),length);
-            }
+            if (!ptr) { return; }
+            std::allocator_traits<Allocator>::deallocate(sm_allocator_,static_cast<Object *>(ptr),length);
         }
 
         constexpr void operator delete(void * const ptr) noexcept
         { operator delete(ptr,1); }
 
-        template<typename ...Args1,typename ...Args2>
-        [[nodiscard]]
-        static constexpr auto Create( Parameter< Args1... > && args1 = {},
-              Parameter< Args2...> && args2 = {} ) noexcept -> Object *
+        template< typename ArgsList1 = Parameter<> ,typename ArgsList2 = Parameter<> >
+            requires(std::conjunction_v<is_tuple<ArgsList1> , is_tuple<ArgsList2>>)
+        static constexpr auto Create( ArgsList1 && args1 = {},ArgsList2 && args2 = {} )
+            noexcept -> Object *
         {
             static_assert( std::disjunction_v< std::is_base_of< XTwoPhaseConstruction ,Object >
                 ,std::is_convertible<Object,XTwoPhaseConstruction >
@@ -438,30 +449,33 @@ inline namespace mem {
                 auto const obj_ptr { new (raw_ptr) Object( std::get<I1>( std::forward< decltype( args1 ) >( args1 ) )... ) };
                 ObjectUPtr obj { obj_ptr, Deleter {} };
                 return obj->construct_( std::get<I2>( std::forward< decltype( args2 ) >( args2 ) )... ) ? obj.release() : nullptr;
-            }( indices( args1 ) ,indices( args2 ) );
+            }( XPrivate::indices( args1 ) ,XPrivate::indices( args2 ) );
         }
 
-        template<typename ...Args1,typename ...Args2>
-        [[nodiscard]] [[maybe_unused]]
-        static constexpr auto CreateSharedPtr ( Parameter< Args1...> && args1 = {}
-            ,Parameter< Args2...> && args2 = {} ) noexcept -> ObjectSPtr
+        template< typename ArgsList1 = Parameter<> ,typename ArgsList2 = Parameter<> >
+            requires(std::conjunction_v<is_tuple<ArgsList1> , is_tuple<ArgsList2>>)
+        static constexpr auto CreateUniquePtr ( ArgsList1 && args1 = {},ArgsList2 && args2 = {} )
+            noexcept -> ObjectUPtr
+        {
+            return { Create( std::forward< decltype( args1 ) >( args1 )
+                ,std::forward< decltype( args2 ) >( args2 ) ) ,Deleter {} };
+        }
+
+        template<typename ArgsList1 = Parameter<> ,typename ArgsList2 = Parameter<> >
+            requires(std::conjunction_v<is_tuple<ArgsList1> , is_tuple<ArgsList2>>)
+        static constexpr auto CreateSharedPtr ( ArgsList1 && args1 = {} ,ArgsList2 && args2 = {} )
+            noexcept -> ObjectSPtr
         {
             return ObjectSPtr { Create( std::forward< decltype( args1 ) >( args1 )
                 ,std::forward< decltype( args2 ) >( args2 ) ) ,Deleter{} , sm_allocator_ };
         }
 
-        template<typename ...Args1,typename ...Args2>
-        [[nodiscard]] [[maybe_unused]]
-        static constexpr auto CreateUniquePtr ( Parameter< Args1... > && args1 = {}
-            ,Parameter< Args2... > && args2 = {} ) noexcept -> ObjectUPtr
-        {
-            return { Create( std::forward< decltype( args1 ) >( args1 )
-                ,std::forward< decltype( args2 ) >( args2 ) ) ,Deleter{} };
-        }
     protected:
         constexpr XTwoPhaseConstruction() = default;
         template<typename ,typename > friend class XSingleton;
     };
+
+    using TwoPhaseConstruction [[maybe_unused]] = XTwoPhaseConstruction<void>;
 
     template<typename Tp_, typename Alloc_ >
     class XSingleton : protected XTwoPhaseConstruction<Tp_, Alloc_> {
@@ -472,9 +486,10 @@ inline namespace mem {
         using Object = Base_::Object;
         using SingletonPtr = Base_::ObjectSPtr;
 
-        template<typename ...Args1,typename ...Args2>
-        static constexpr auto UniqueConstruction([[maybe_unused]] Parameter<Args1...> && args1 = {}
-            , [[maybe_unused]] Parameter<Args2...> && args2 = {}) noexcept -> SingletonPtr
+        template< typename ArgsList1 = Parameter<>,typename ArgsList2 = Parameter<> >
+            requires(std::conjunction_v<is_tuple<ArgsList1> , is_tuple<ArgsList2>>)
+        static constexpr auto UniqueConstruction(ArgsList1 && args1 = {}, ArgsList2 && args2 = {})
+            noexcept -> SingletonPtr
         {
             static_assert( XPrivate::is_destructor_private_v< Object >
                     , "destructor( ~Object() ) must be private!" );
@@ -485,7 +500,7 @@ inline namespace mem {
 
             STATIC_ASSERT_P
 
-            allocate_([&args1,&args2] {
+            allocate_([&args1,&args2]()noexcept{
                 return Base_::CreateSharedPtr(std::forward< decltype(args1) >(args1)
                         ,std::forward<decltype(args2) >(args2));
             });
@@ -518,7 +533,6 @@ inline namespace mem {
         constexpr XSingleton() = default;
         W_DISABLE_COPY_MOVE(XSingleton)
     };
-
 }
 
 #define X_TWO_PHASE_CONSTRUCTION_CLASS \
@@ -526,7 +540,7 @@ private: \
     inline constexpr void checkFriendXTwoPhaseConstruction_() {} \
     template<typename,typename > friend class XTwoPhaseConstruction; \
     template<typename> friend struct XPrivate::Has_X_TwoPhaseConstruction_CLASS_Macro; \
-    template<typename ,typename ...> friend struct XPrivate::Has_construct_Func; \
+    template<typename ,typename > friend struct XPrivate::Has_construct_Func; \
     template<typename,typename > friend class XSingleton;
 
 #undef STATIC_ASSERT_P
