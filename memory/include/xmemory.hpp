@@ -230,29 +230,12 @@ inline namespace mem {
         struct Has_construct_Func {
         private:
             static_assert(std::is_object_v<Object>,"typename Object don't Object type");
-        #if __cplusplus >= 202002L
             template<typename O,typename ...A>
             static constexpr auto test(int) -> std::true_type
                 requires ( ( sizeof( std::declval<O>().construct_( ( std::declval< std::decay_t< A > >() )... ) )
                     > static_cast<std::size_t>(0) ) )
             {return {} ;}
-        #else
-            #if 0 //只能二选一
-                template<typename O,typename ...A>
-                static constexpr auto test(int)
-                    -> std::enable_if_t< ( sizeof(std::declval<O>().construct_( (std::declval< std::decay_t< A > >())...) )
-                        > static_cast<std::size_t>(0) )
-                        ,std::true_type >
-            {return {};}
-            #else
-                template<typename O,typename ...A>
-                static constexpr auto test(int)
-                -> decltype( sizeof( std::declval<O>().construct_( (std::declval< std::decay_t< A > >())...) )
-                    > static_cast<std::size_t>(0)
-                        , std::true_type{} )
-            {return {};}
-            #endif
-        #endif
+
             template<typename ...>
             static constexpr auto test(...) -> std::false_type {return {};}
         public:
@@ -266,7 +249,6 @@ inline namespace mem {
         struct is_private_mem_func {
             static_assert(std::is_object_v<Object>,"typename Object don't Object type");
         private:
-        #if __cplusplus >= 202002L
             template<typename O,typename ...A>
             static constexpr auto test(int) -> std::false_type
                 requires (
@@ -274,23 +256,6 @@ inline namespace mem {
                         || std::is_same_v< decltype( std::declval<O>().construct_( std::declval< std::decay_t< A > >()...) ),void >
                 )
             {return {} ;}
-        #else
-            #if 0 //只能二选一
-                template<typename O,typename ...A>
-                static constexpr auto test(int)
-                    -> std::enable_if_t< std::is_same_v< decltype( std::declval<O>().construct_( (std::declval< std::decay_t< A > >())...) ) ,void >
-                         || ( sizeof( std::declval<O>().construct_( (std::declval< std::decay_t< A > >())...) ) > static_cast<std::size_t>(0) )
-                            ,std::false_type >
-            {return {} ;}
-            #else
-                template<typename O,typename ...A>
-                static constexpr auto test(int)
-                    -> decltype( std::is_same_v< decltype(std::declval<O>().construct_((std::declval< std::decay_t< A > >())...)), void >
-                        || ( sizeof( std::declval<O>().construct_( (std::declval< std::decay_t< A > >())... ) ) > static_cast<std::size_t>(0) )
-                            ,std::false_type {} )
-            {return {} ;}
-            #endif
-        #endif
 
             template<typename ...>
             static constexpr auto test(...) ->std::true_type {return {} ;}
@@ -315,7 +280,6 @@ inline namespace mem {
                 enum { value = false };
             };
 
-        #if __cplusplus >= 202002L
             template<typename ...AS> requires(sizeof...(AS) == 1)
             struct is_copy_move_constructor<std::tuple<AS...>> {
                 using Tuple_ = std::tuple<AS...>;
@@ -329,25 +293,6 @@ inline namespace mem {
                     >
                 };
             };
-        #else
-            template<> struct is_copy_move_constructor<std::tuple<>> {
-                enum { value = false };
-            };
-            template<typename ...AS>
-            struct is_copy_move_constructor<std::tuple<AS...>> {
-            private:
-                using Tuple_ = std::tuple<AS...>;
-                using First_ = std::tuple_element_t<0, Tuple_>;
-            public:
-                enum {
-                    value = std::disjunction_v<
-                        std::is_same<First_, T &>,
-                        std::is_same<First_, const T &>,
-                        std::is_same<First_, T &&>,
-                        std::is_same<First_, const T &&>>
-                };
-            };
-        #endif
 
         public:
             enum {value = result && !is_copy_move_constructor<std::tuple<Args...>>::value};
