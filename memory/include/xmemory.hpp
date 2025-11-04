@@ -242,8 +242,10 @@ inline namespace mem {
             static constexpr auto test(...) noexcept -> std::false_type
             { return {}; }
 
+            using decayedTuple_ = std::decay_t< Tuple >;
+
         public:
-            enum { value = decltype(test<Object,Tuple>(indices<Tuple>()))::value };
+            enum { value = decltype(test<Object,decayedTuple_>(indices<Tuple>()))::value };
         };
 
         template<typename ...Args>
@@ -267,8 +269,10 @@ inline namespace mem {
             static constexpr auto test(...) noexcept -> std::true_type
             { return {}; }
 
+            using decayedTuple_ = std::decay_t< Tuple >;
+
         public:
-            enum { value = decltype(test<Object,Tuple>(indices<Tuple>()))::value };
+            enum { value = decltype(test<Object,decayedTuple_>(indices<Tuple>()))::value };
         };
 
         template<typename ...Args>
@@ -304,8 +308,10 @@ inline namespace mem {
                 };
             };
 
+            using decayedTuple_ = std::decay_t< Tuple >;
+
         public:
-            enum {value = result<Object,Tuple>(indices<Tuple>()) && !is_copy_move_constructor<Tuple>::value};
+            enum {value = result<Object,decayedTuple_>(indices<Tuple>()) && !is_copy_move_constructor<Tuple>::value};
         };
 
         template<typename ...Args>
