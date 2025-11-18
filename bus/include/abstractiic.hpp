@@ -20,10 +20,10 @@ public:
     virtual bool send(uint8_t d,bool ack) const noexcept;
     virtual uint8_t recv(bool ack) const noexcept;
 
-    int64_t read(void*, std::size_t, int64_t) noexcept override ;
-    int64_t read(void*, std::size_t, int64_t) const noexcept override;
-    int64_t write(const void*, std::size_t, int64_t) noexcept override;
-    int64_t write(const void*, std::size_t, int64_t) const noexcept override;
+    int64_t read(void *, std::size_t, int64_t) noexcept override ;
+    int64_t read(void *, std::size_t, int64_t) const noexcept override;
+    int64_t write(const void *, std::size_t, int64_t) noexcept override;
+    int64_t write(const void *, std::size_t, int64_t) const noexcept override;
 
 protected:
     static void delay(std::size_t = 50) noexcept;
