@@ -16,9 +16,9 @@ public:
     virtual void start() const noexcept;
     virtual void stop() const noexcept;
     virtual void sendAck(bool) const noexcept;
-    virtual bool ack() const noexcept;
-    virtual bool send(uint8_t d,bool ack) const noexcept;
-    virtual uint8_t recv(bool ack) const noexcept;
+    [[nodiscard]] virtual bool ack() const noexcept;
+    [[nodiscard]] virtual bool send(uint8_t d,bool ack) const noexcept;
+    [[nodiscard]] virtual uint8_t recv(bool ack) const noexcept;
 
     int64_t read(void *, std::size_t, int64_t) noexcept override ;
     int64_t read(void *, std::size_t, int64_t) const noexcept override;
@@ -30,7 +30,7 @@ protected:
     explicit AbstractIIC(GPIOBase &,GPIOBase &);
     explicit AbstractIIC() = default;
     void sdaDir(bool) const noexcept;
-    constexpr bool check() const noexcept
+    [[nodiscard]] constexpr bool check() const noexcept
     { return m_scl_ && m_sda_; }
 };
 
