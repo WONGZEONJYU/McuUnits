@@ -6,7 +6,7 @@
 
 class GPIOBase;
 
-class AbstractIIC  : public CharDevBase{
+class AbstractIIC : public CharDevBase{
 
 protected:
     GPIOBase * m_scl_{},* m_sda_{};
