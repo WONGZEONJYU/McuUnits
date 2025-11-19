@@ -2,7 +2,7 @@
 #define GPIO_BASE_HPP 1
 
 #include <optional>
-#include <xmemory.hpp>
+#include <memory>
 
 enum class GPIOMode : int {
     INPUT,OUTPUT,ALTERNATE,ANALOG,UNKNOWN = -1

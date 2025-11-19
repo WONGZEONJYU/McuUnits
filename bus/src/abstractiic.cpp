@@ -2,9 +2,6 @@
 #include <abstractgpio.hpp>
 #include <xhelper.hpp>
 
-void AbstractIIC::delay(std::size_t cnt) noexcept
-{ while (--cnt){} }
-
 void AbstractIIC::start() const noexcept {
     sdaDir(true);
     sclPort().set();
@@ -101,6 +98,7 @@ void AbstractIIC::sdaDir(bool const b) const noexcept{
 }
 
 int64_t AbstractIIC::read(void * const dst, std::size_t const len, int64_t) noexcept {
+
     CHECK_EMPTY(dst,return -1);
 
     XRAII const r {[this]{start();},[this]{stop();}};
@@ -137,3 +135,6 @@ int64_t AbstractIIC::write(const void * const src , std::size_t const len, int64
 
 int64_t AbstractIIC::write(const void * const src , std::size_t const len , int64_t) const noexcept
 { return const_cast<AbstractIIC*>(this)->write(src,len,0); }
+
+void AbstractIIC::delay() const noexcept
+{ auto cnt { 5 }; while (--cnt){} }
