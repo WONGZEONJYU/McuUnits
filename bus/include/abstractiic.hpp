@@ -8,7 +8,6 @@ class AbstractGPIO;
 
 class AbstractIIC : public CharDevBase {
 
-protected:
     [[nodiscard]] virtual AbstractGPIO const & sclPort() const noexcept = 0;
     [[nodiscard]] virtual AbstractGPIO const & sdaPort() const noexcept = 0;
 
