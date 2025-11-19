@@ -49,6 +49,7 @@ public:
 #define INLINE __attribute__((__always_inline__))
 
 #define CHECK_EMPTY(x,...) do { if(!x){__VA_ARGS__;} }while(false)
+#define CHECK_ERR(x,...) CHECK_EMPTY(x,__VA_ARGS__)
 
 enum class NonConst{};
 enum class Const{};
