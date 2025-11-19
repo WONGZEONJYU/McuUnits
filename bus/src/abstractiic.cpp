@@ -1,115 +1,102 @@
 #include <abstractiic.hpp>
-#include <gpiobase.hpp>
+#include <abstractgpio.hpp>
 #include <xhelper.hpp>
 
 void AbstractIIC::delay(std::size_t cnt) noexcept
 { while (--cnt){} }
 
 void AbstractIIC::start() const noexcept {
-    CHECK_EMPTY(check(),return);
     sdaDir(true);
-    m_scl_->set();
+    sclPort().set();
     delay();
-    m_sda_->set();
+    sdaPort().set();
     delay();
-    m_sda_->reset();
+    sdaPort().reset();
     delay();
-    m_scl_->reset();
+    sclPort().reset();
     delay();
 }
 
 void AbstractIIC::stop() const noexcept {
-    CHECK_EMPTY(check(),return);
     sdaDir(true);
-    m_sda_->reset();
+    sdaPort().reset();
     delay();
-    m_scl_->reset();
+    sclPort().reset();
     delay();
-    m_scl_->set();
+    sclPort().set();
     delay();
-    m_sda_->set();
+    sdaPort().set();
     delay();
 }
 
 void AbstractIIC::sendAck(bool const b) const noexcept {
-    CHECK_EMPTY(check(),return);
-    m_scl_->reset();
+    sclPort().reset();
     delay();
     sdaDir(true);
-    b ? m_sda_->reset() : m_sda_->set();
+    b ? sdaPort().reset() : sdaPort().set();
     delay();
-    m_scl_->set();
+    sclPort().set();
     delay();
-    m_scl_->reset();
+    sclPort().reset();
     delay();
 }
 
 bool AbstractIIC::ack() const noexcept {
-    CHECK_EMPTY(check(),return {});
     sdaDir({});
-    m_scl_->reset();
+    sclPort().reset();
     delay();
-    m_sda_->set();
+    sdaPort().set();
     delay();
-    m_scl_->set();
+    sclPort().set();
     delay();
     auto time { 1000 };
-    while (m_sda_->read().value_or(true))
+    while (sdaPort().read().value_or(true))
     { if (!--time) { stop(); return {}; } }
-    m_scl_->reset();
+    sclPort().reset();
     delay();
     return true;
 }
 
 bool AbstractIIC::send(uint8_t d,bool const ack) const noexcept {
-    CHECK_EMPTY(check(),return {});
     sdaDir(true);
     for (int i{};i < 8;++i) {
-        m_scl_->reset();
+        sclPort().reset();
         delay();
-        d & 0x80 ? m_sda_->set() : m_sda_->reset();
+        d & 0x80 ? sdaPort().set() : sdaPort().reset();
         d <<= 1;
         delay();
-        m_scl_->set();
+        sclPort().set();
         delay();
     }
     return !ack || this->ack();
 }
 
 uint8_t AbstractIIC::recv(bool const ack) const noexcept {
-    CHECK_EMPTY(check(),return {});
     sdaDir({});
-    m_scl_->reset();
+    sclPort().reset();
     delay();
-    m_sda_->set();
+    sclPort().set();
     uint8_t d {};
     for (int i{};i < 8;++i) {
-        m_scl_->set();
+        sclPort().set();
         delay();
         d <<= 1;
-        if (m_sda_->read().value_or(false)) { ++d; }
-        m_scl_->reset();
+        if (sdaPort().read().value_or(false)) { ++d; }
+        sclPort().reset();
         delay();
     }
     sendAck(ack);
     return d;
 }
 
-AbstractIIC::~AbstractIIC() = default;
-
-AbstractIIC::AbstractIIC(GPIOBase & scl,GPIOBase & sda)
-    : m_scl_(std::addressof(scl))
-,m_sda_(std::addressof(sda))
-{}
-
 void AbstractIIC::sdaDir(bool const b) const noexcept{
     if (b) {
-        m_sda_->setMode(GPIOMode::OUTPUT);
-        m_sda_->setOutputType(GPIOOutPutType::PUSHPULL);
-        m_sda_->setPull(GPIOPull::PULL_UP);
+        sdaPort().setMode(GPIOMode::OUTPUT);
+        sdaPort().setOutputType(GPIOOutPutType::PUSHPULL);
+        sdaPort().setPull(GPIOPull::PULL_UP);
     }else {
-        m_sda_->setMode(GPIOMode::INPUT);
-        m_sda_->setPull(GPIOPull::NONE);
+        sdaPort().setMode(GPIOMode::INPUT);
+        sdaPort().setPull(GPIOPull::NONE);
     }
 }
 

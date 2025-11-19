@@ -4,15 +4,16 @@
 #include <memory>
 #include <chardevbase.hpp>
 
-class GPIOBase;
+class AbstractGPIO;
 
-class AbstractIIC : public CharDevBase{
+class AbstractIIC : public CharDevBase {
 
 protected:
-    GPIOBase * m_scl_{},* m_sda_{};
+    [[nodiscard]] virtual AbstractGPIO const & sclPort() const noexcept = 0;
+    [[nodiscard]] virtual AbstractGPIO const & sdaPort() const noexcept = 0;
 
 public:
-    ~AbstractIIC() override;
+    ~AbstractIIC() override = default;
     virtual void start() const noexcept;
     virtual void stop() const noexcept;
     virtual void sendAck(bool) const noexcept;
@@ -27,11 +28,8 @@ public:
 
 protected:
     static void delay(std::size_t = 50) noexcept;
-    explicit AbstractIIC(GPIOBase &,GPIOBase &);
     explicit AbstractIIC() = default;
     void sdaDir(bool) const noexcept;
-    [[nodiscard]] constexpr bool check() const noexcept
-    { return m_scl_ && m_sda_; }
 };
 
 #endif
