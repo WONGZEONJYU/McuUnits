@@ -39,8 +39,8 @@ template <typename Ptr> auto wGetPtrHelper(Ptr const & ptr) noexcept -> decltype
     inline const Class* q_func() const noexcept { return static_cast<const Class *>(q_ptr); } \
     friend class Class;
 
-#define W_D(Class) Class##Private * const d = d_func()
-#define W_Q(Class) Class * const q = q_func()
+#define W_D(Class) Class##Private * const d {d_func()}
+#define W_Q(Class) Class * const q {q_func()}
 
 /********************************************************信号槽部分，请勿乱用*********************************************/
 
