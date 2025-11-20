@@ -237,14 +237,14 @@ inline namespace XContainer {
             ? std::optional<T>{value} : std::nullopt;
     }
 
-    template<typename T,typename StringStream,typename STR>
+    template<typename T,typename SS = XStringStream,typename STR>
     constexpr auto toNum(STR && s) noexcept -> std::optional<T>
-    { StringStream ss {}; ss << s; T value{}; return ss >> value ? std::optional<T>{value} : std::nullopt; }
+    { SS ss {}; ss << s; T value{}; return ss >> value ? std::optional<T>{value} : std::nullopt; }
 
-    template<typename StringStream,typename T>
-    constexpr auto toString(T && v,auto const precision = StringStream{}.precision())
-        noexcept -> decltype(StringStream{}.str())
-    { StringStream ss {};ss.precision(precision);ss << v;return ss.str(); }
+    template<typename SS = XStringStream,typename T>
+    constexpr auto toString(T && v,decltype(SS{}.precision()) const precision = SS{}.precision())
+        noexcept -> decltype(SS{}.str())
+    { SS ss {};ss.precision(precision);ss << v;return ss.str(); }
 
     template<typename T>
     concept StandardChar =
