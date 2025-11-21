@@ -50,7 +50,6 @@ public:
     constexpr XThreadStatic & operator=(XThreadStatic && o) noexcept
     { XThreadStatic{std::move(o)}.swap(*this); return *this; }
 
-private:
     constexpr void swap(XAbstractThread & o) noexcept override {
         XAbstractThread::swap(o);
         m_stack_.swap(static_cast<XThreadStatic &>(o).m_stack_);

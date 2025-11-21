@@ -4,6 +4,19 @@
 #include <xmemory.hpp>
 #include <functional>
 
+#if 0
+class XAbstractThread;
+class XAbstractThreadPrivate;
+
+class XAbstractThreadData {
+protected:
+    constexpr XAbstractThreadData() = default;
+public:
+    virtual ~XAbstractThreadData() = default;
+    XAbstractThread * q_ptr{};
+};
+#endif
+
 class XAbstractThread {
 protected:
     inline static XAtomicInteger<std::size_t> m_th_cnt_{};
@@ -18,6 +31,7 @@ public:
     void start() const noexcept;
     void stop() const noexcept;
     void setPriority(uint32_t) const noexcept;
+    virtual void swap(XAbstractThread & ) noexcept;
     static void sleep_for(std::size_t) noexcept;
     static void sleep_until(std::size_t & ,std::size_t) noexcept;
     static void yield() noexcept;
@@ -25,7 +39,6 @@ public:
 
 protected:
     virtual ~XAbstractThread();
-    virtual void swap(XAbstractThread & ) noexcept;
     void destroy() noexcept;
 
 private:
