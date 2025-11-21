@@ -45,6 +45,7 @@ public:
     void setGPIO(void *,uint32_t) noexcept;
     operator bool() const noexcept;
     bool operator!() const noexcept;
+    void swap(AbstractGPIO &) noexcept;
 
 protected:
     explicit AbstractGPIO(void * = {},uint32_t = {});
@@ -52,7 +53,6 @@ protected:
     AbstractGPIO(AbstractGPIO &&) = default;
     AbstractGPIO & operator=(AbstractGPIO const &) = default;
     AbstractGPIO & operator=(AbstractGPIO && ) = default;
-    void swap(AbstractGPIO &) noexcept;
     void copy(AbstractGPIO const &) noexcept;
 };
 
