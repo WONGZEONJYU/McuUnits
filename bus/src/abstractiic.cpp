@@ -28,14 +28,14 @@ void AbstractIIC::stop() const noexcept {
 
 void AbstractIIC::sendAck(bool const b) const noexcept {
     sclPort().reset();
-    delay();
+    //delay();
     sdaDir(true);
     b ? sdaPort().reset() : sdaPort().set();
     delay();
     sclPort().set();
     delay();
     sclPort().reset();
-    delay();
+    //delay();
 }
 
 bool AbstractIIC::ack() const noexcept {
@@ -56,20 +56,22 @@ bool AbstractIIC::ack() const noexcept {
 
 bool AbstractIIC::send(uint8_t d,bool const ack) const noexcept {
     sdaDir(true);
+    sclPort().reset();
     for (int i{};i < 8;++i) {
-        sclPort().reset();
-        delay();
         d & 0x80 ? sdaPort().set() : sdaPort().reset();
         d <<= 1;
         delay();
         sclPort().set();
         delay();
+        sclPort().reset();
     }
     return !ack || this->ack();
 }
 
 uint8_t AbstractIIC::recv(bool const ack) const noexcept {
     sdaDir({});
+    uint8_t d {};
+#if 0
     sclPort().reset();
     delay();
     sclPort().set();
@@ -82,6 +84,16 @@ uint8_t AbstractIIC::recv(bool const ack) const noexcept {
         sclPort().reset();
         delay();
     }
+#else
+    for (int i{};i < 8;++i) {
+        sclPort().reset();
+        delay();
+        d <<= 1;
+        if (sdaPort().read().value_or(false)) { ++d; }
+        sclPort().set();
+        delay();
+    }
+#endif
     sendAck(ack);
     return d;
 }
@@ -89,11 +101,15 @@ uint8_t AbstractIIC::recv(bool const ack) const noexcept {
 void AbstractIIC::sdaDir(bool const b) const noexcept{
     if (b) {
         sdaPort().setMode(GPIOMode::OUTPUT);
+#if 0
         sdaPort().setOutputType(GPIOOutPutType::PUSHPULL);
         sdaPort().setPull(GPIOPull::PULL_UP);
+#endif
     }else {
         sdaPort().setMode(GPIOMode::INPUT);
+#if 0
         sdaPort().setPull(GPIOPull::NONE);
+#endif
     }
 }
 
@@ -129,7 +145,7 @@ int64_t AbstractIIC::write(const void * const src , std::size_t const len, int64
     XRAII const r {[this]{start();},[this]{stop();}};
     auto const pd { static_cast<const uint8_t*>(src) };
     int64_t c {};
-    for (;c < len;++c) { if(send(pd[c] ,true)) { return -2; } }
+    for (;c < len;++c) { if(!send(pd[c] ,true)) { return -2; } }
     return c;
 }
 
