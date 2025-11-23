@@ -28,14 +28,12 @@ void AbstractIIC::stop() const noexcept {
 
 void AbstractIIC::sendAck(bool const b) const noexcept {
     sclPort().reset();
-    //delay();
     sdaDir(true);
     b ? sdaPort().reset() : sdaPort().set();
     delay();
     sclPort().set();
     delay();
     sclPort().reset();
-    //delay();
 }
 
 bool AbstractIIC::ack() const noexcept {

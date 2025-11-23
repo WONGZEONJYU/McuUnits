@@ -6,6 +6,23 @@
 #if defined(FREERTOS) || defined(USE_FREERTOS)
 #include <task.h>
 
+void XAbstractThreadPrivate::start(void * const parm) {
+    auto const this_{ static_cast<XAbstractThreadPrivate*>(parm) };
+    this_->m_finished.storeRelaxed({});
+    this_->m_fn->operator()();
+    this_->m_finished.storeRelaxed(true);
+    vTaskDelete(nullptr);
+}
+
+void XAbstractThreadPrivate::startHelper() noexcept {
+
+    if (!m_finished.loadRelaxed()) {
+
+    }
+
+    (void)this;
+}
+
 void XAbstractThread::taskReturn() noexcept
 { vTaskDelete(nullptr); }
 
