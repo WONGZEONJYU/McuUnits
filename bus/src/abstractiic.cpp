@@ -28,12 +28,14 @@ void AbstractIIC::stop() const noexcept {
 
 void AbstractIIC::sendAck(bool const b) const noexcept {
     sclPort().reset();
+    delay();
     sdaDir(true);
     b ? sdaPort().reset() : sdaPort().set();
     delay();
     sclPort().set();
     delay();
     sclPort().reset();
+    delay();
 }
 
 bool AbstractIIC::ack() const noexcept {
@@ -68,8 +70,6 @@ bool AbstractIIC::send(uint8_t d,bool const ack) const noexcept {
 
 uint8_t AbstractIIC::recv(bool const ack) const noexcept {
     sdaDir({});
-    uint8_t d {};
-#if 0
     sclPort().reset();
     delay();
     sclPort().set();
@@ -82,16 +82,6 @@ uint8_t AbstractIIC::recv(bool const ack) const noexcept {
         sclPort().reset();
         delay();
     }
-#else
-    for (int i{};i < 8;++i) {
-        sclPort().reset();
-        delay();
-        d <<= 1;
-        if (sdaPort().read().value_or(false)) { ++d; }
-        sclPort().set();
-        delay();
-    }
-#endif
     sendAck(ack);
     return d;
 }
