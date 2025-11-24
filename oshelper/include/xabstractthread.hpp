@@ -2,9 +2,9 @@
 #define X_THREAD_P_HPP 1
 
 #include <xmemory.hpp>
-#include <functional>
+#include <xcallablehelper.hpp>
 
-#if 0
+#if 1
 class XAbstractThread;
 class XAbstractThreadPrivate;
 
