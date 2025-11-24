@@ -7,20 +7,25 @@
 #include <task.h>
 
 void XAbstractThreadPrivate::start(void * const parm) {
-    auto const this_{ static_cast<XAbstractThreadPrivate*>(parm) };
-    this_->m_finished.storeRelaxed({});
-    this_->m_fn->operator()();
-    this_->m_finished.storeRelaxed(true);
+    auto const thr{ static_cast<XAbstractThreadPrivate*>(parm) };
+    std::unique_lock lk{thr->m_mtx};
+    thr->m_finished.storeRelaxed({});
+    if (auto const & fn{ thr->m_fn })
+    { fn->operator()(); }
+    thr->m_finished.storeRelaxed(true);
+    thr->m_thread.storeRelease({});
     vTaskDelete(nullptr);
 }
 
-void XAbstractThreadPrivate::startHelper() noexcept {
+void XAbstractThreadPrivate::startHelper(std::size_t) noexcept {
 
-    if (!m_finished.loadRelaxed()) {
+    if (!m_finished.loadRelaxed()) { return; }
 
-    }
+}
 
-    (void)this;
+void XAbstractThreadPrivate::finished() noexcept
+{
+
 }
 
 void XAbstractThread::taskReturn() noexcept
