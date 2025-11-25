@@ -59,7 +59,7 @@ protected:
     void start(std::size_t ,uint32_t ,void * ,void *) noexcept;
 
 private:
-    XAbstractThread() ;
+    XAbstractThread();
     explicit XAbstractThread(CallablePtr);
     void setThreadFn(CallablePtr);
 

@@ -167,7 +167,7 @@ XAbstractThread::XAbstractThread()
 }
 
 XAbstractThread::XAbstractThread(CallablePtr fn)
-    : XAbstractThread()
+: XAbstractThread()
 {
     W_D(XAbstractThread);
     if (!d) { return; }

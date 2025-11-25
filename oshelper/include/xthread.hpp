@@ -19,7 +19,10 @@ public:
     explicit XThreadDynamic(Args && ...args)
     : XAbstractThread { XCallableHelper::createCallable(std::forward<Args>(args)...) }
     {}
+
+#if 0
     //{ setThreadEntry(std::forward<Args>(args)...); }
+#endif
 
     XThreadDynamic(XThreadDynamic && ) noexcept;
 
@@ -34,6 +37,8 @@ public:
 
 #if configSUPPORT_STATIC_ALLOCATION > 0
 
+template<std::size_t = 1024> class XThreadStatic;
+
 template<std::size_t DEPTH>
 class XThreadStatic final : public XAbstractThread {
     W_DISABLE_COPY(XThreadStatic)
@@ -44,13 +49,17 @@ class XThreadStatic final : public XAbstractThread {
 public:
     XThreadStatic() = default;
 
-    constexpr ~XThreadStatic() override = default;
+    constexpr ~XThreadStatic() override
+    { wait(); }
 
     template<typename ...Args>
     explicit XThreadStatic(Args && ...args) noexcept
     : XAbstractThread { XCallableHelper::createCallable(std::forward<Args>(args)...) }
     {}
-    //{ create_(DEPTH,m_stack_.data(),std::addressof(m_tcb_),std::forward<Args_>(args)...); }
+
+#if 0
+    { create_(DEPTH,m_stack_.data(),std::addressof(m_tcb_),std::forward<Args_>(args)...); }
+#endif
 
     constexpr XThreadStatic(XThreadStatic && o) noexcept
     { swap(o); }
@@ -58,11 +67,14 @@ public:
     constexpr XThreadStatic & operator=(XThreadStatic && o) noexcept
     { XThreadStatic{std::move(o)}.swap(*this); return *this; }
 
-    constexpr void swap(XAbstractThread & o) noexcept {
+    constexpr void swap(XThreadStatic & o) noexcept {
         m_d_ptr_.swap(o.m_d_ptr_);
-        m_stack_.swap(static_cast<XThreadStatic &>(o).m_stack_);
-        std::swap(m_tcb_,static_cast<XThreadStatic &>(o).m_tcb_);
+        m_stack_.swap(o.m_stack_);
+        std::swap(m_tcb_,o.m_tcb_);
     }
+
+    constexpr void start(std::size_t const stackSize = 1024, uint32_t const prio = configMAX_PRIORITIES) noexcept
+    { XAbstractThread::start(stackSize, prio,std::addressof(m_tcb_),m_stack_.data()); }
 };
 
 #endif
