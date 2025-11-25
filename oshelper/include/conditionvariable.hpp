@@ -45,11 +45,11 @@ public:
     // wait 解锁 -> 阻塞 -> 重新加锁
     template<typename Lock>
     constexpr void wait(Lock & lock) noexcept
-    { wait_impl(lock); }
+    { waitImpl(lock); }
 
     template<typename Lock>
     constexpr bool wait_for(Lock & lock, uint32_t const timeoutMs) noexcept
-    { return wait_impl(lock, pdMS_TO_TICKS(timeoutMs)); }
+    { return waitImpl(lock, pdMS_TO_TICKS(timeoutMs)); }
 
     // Predicate 版本
     template<typename Lock, typename Predicate>
@@ -65,18 +65,23 @@ public:
 
 private:
     template<typename Lock>
-    constexpr bool wait_impl(Lock & lock, int64_t const ticks = -1) noexcept
+    constexpr bool waitImpl(Lock & lock, int64_t const ticks = -1) noexcept
     { UnLockGuard unlock { lock }; WaiterGuard w {m_waiters_}; return m_semaphore_.acquire(ticks); }
 };
 
 template<typename Lock, typename Predicate>
 constexpr bool ConditionVariableAny::wait_for(Lock & lock, uint32_t const timeoutMs, Predicate pred) noexcept {
-    auto const startTick { xTaskGetTickCount() };
-    auto const timeoutTicks { pdMS_TO_TICKS(timeoutMs) };
+    if (pred() ) { return true; }
+    if (!timeoutMs) { return pred(); }
+
+    auto waitTime { pdMS_TO_TICKS(timeoutMs) };
+    TimeOut_t timeout{};
+    vTaskSetTimeOutState( &timeout );
+
     while (!pred()) {
-        auto const now{ xTaskGetTickCount() };
-        if ( now - startTick >= timeoutTicks ) { return pred(); }
-        if ( !wait_impl(lock, timeoutTicks - (now - startTick)) ) { return pred(); }
+        if (xTaskCheckForTimeOut(std::addressof(timeout),std::addressof(waitTime)))
+        { return pred(); }
+        if ( !waitImpl(lock, waitTime) ) { return pred(); }
     }
     return true;
 }
