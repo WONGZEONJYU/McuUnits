@@ -4,6 +4,7 @@
 #include <xthread.hpp>
 
 class XTaskBase {
+
     W_DISABLE_COPY_MOVE(XTaskBase)
     XThreadDynamic m_th_;
     XAtomicBool m_isRunning_{};

@@ -138,7 +138,6 @@ XAbstractThread::XAbstractThread(CallablePtr fn)
 void XAbstractThread::setThreadFn(CallablePtr fn) {
     W_D(XAbstractThread);
     CHECK_EMPTY(d,return);
-    TaskCriticalArea c{};
     if (!d->m_finished.loadAcquire() || d->m_running.loadAcquire() || d->m_threadID.loadAcquire())
     { return; }
     d->m_fn.swap(fn);

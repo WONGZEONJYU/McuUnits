@@ -18,9 +18,9 @@ public:
 #endif
 
 class XAbstractThread {
+
     W_DISABLE_COPY(XAbstractThread)
     W_DECLARE_PRIVATE_D(m_d_ptr_,XAbstractThread)
-protected:
     XUniquePtr<XAbstractThreadData> m_d_ptr_{};
 
 public:
@@ -47,15 +47,13 @@ public:
 
     virtual ~XAbstractThread();
 
-protected:
-    using CallablePtr = XCallableHelper::CallablePtr;
-    void destroy() noexcept;
-    void start(std::size_t ,uint32_t ,void * ,void *) noexcept;
-
 private:
+    using CallablePtr = XCallableHelper::CallablePtr;
     XAbstractThread();
     explicit XAbstractThread(CallablePtr);
+    void destroy() noexcept;
     void setThreadFn(CallablePtr);
+    void start(std::size_t ,uint32_t ,void * ,void *) noexcept;
 
     friend class XThreadDynamic;
     template<std::size_t > friend class XThreadStatic;
