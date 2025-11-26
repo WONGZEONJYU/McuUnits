@@ -44,20 +44,20 @@ public:
 
     // wait 解锁 -> 阻塞 -> 重新加锁
     template<typename Lock>
-    constexpr void wait(Lock & lock) noexcept
+    constexpr void wait(Lock & lock) const noexcept
     { waitImpl(lock); }
 
     template<typename Lock>
-    constexpr bool wait_for(Lock & lock, uint32_t const timeoutMs) noexcept
+    constexpr bool wait_for(Lock & lock, uint32_t const timeoutMs) const noexcept
     { return waitImpl(lock, pdMS_TO_TICKS(timeoutMs)); }
 
     // Predicate 版本
     template<typename Lock, typename Predicate>
-    constexpr void wait(Lock & lock, Predicate pred) noexcept
+    constexpr void wait(Lock & lock, Predicate pred) const noexcept
     { while (!pred()) { wait(lock); } }
 
     template<typename Lock, typename Predicate>
-    constexpr bool wait_for(Lock & lock, uint32_t timeoutMs, Predicate pred) noexcept;
+    constexpr bool wait_for(Lock & lock, uint32_t timeoutMs, Predicate pred) const noexcept;
 
     void notify_one() const noexcept;
 
@@ -65,12 +65,12 @@ public:
 
 private:
     template<typename Lock>
-    constexpr bool waitImpl(Lock & lock, int64_t const ticks = -1) noexcept
+    constexpr bool waitImpl(Lock & lock, int64_t const ticks = -1) const noexcept
     { UnLockGuard unlock { lock }; WaiterGuard w {m_waiters_}; return m_semaphore_.acquire(ticks); }
 };
 
 template<typename Lock, typename Predicate>
-constexpr bool ConditionVariableAny::wait_for(Lock & lock, uint32_t const timeoutMs, Predicate pred) noexcept {
+constexpr bool ConditionVariableAny::wait_for(Lock & lock, uint32_t const timeoutMs, Predicate pred) const noexcept {
     if (pred() ) { return true; }
     if (!timeoutMs) { return pred(); }
 
