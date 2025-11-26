@@ -219,7 +219,7 @@ inline namespace XContainer {
 
     template<typename T,typename STR>
     requires std::is_arithmetic_v<T> && std::is_integral_v<T>
-    constexpr auto toNum(STR && s,int const base = 10)
+    constexpr auto toNum(STR && s,int const base /* = 10 */)
         noexcept ->std::optional<T>
     {
         T value{};
