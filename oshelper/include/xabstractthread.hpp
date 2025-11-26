@@ -18,61 +18,45 @@ public:
 #endif
 
 class XAbstractThread {
-protected:
-    inline static XAtomicInteger<std::size_t> m_th_cnt_{};
-    XAtomicInt m_id_{-1};
-    XAtomicPointer<void> m_thread_{};
+
+    W_DISABLE_COPY(XAbstractThread)
+    W_DECLARE_PRIVATE_D(m_d_ptr_,XAbstractThread)
+    XUniquePtr<XAbstractThreadData> m_d_ptr_{};
 
 public:
-    W_DISABLE_COPY(XAbstractThread)
-    static std::size_t thread_count() noexcept;
-    [[nodiscard]] void * thread_handle() const noexcept;
-    [[nodiscard]] int thread_id() const noexcept;
-    void start() const noexcept;
-    void stop() const noexcept;
-    void setPriority(uint32_t) const noexcept;
-    virtual void swap(XAbstractThread & ) noexcept;
+    static std::size_t threadCount() noexcept;
     static void sleep_for(std::size_t) noexcept;
     static void sleep_until(std::size_t & ,std::size_t) noexcept;
     static void yield() noexcept;
     static bool isRunningInThread() noexcept;
 
-protected:
+    [[nodiscard]] void * threadHandle() const noexcept;
+    /**
+     * 自定义ID,紧记录当前线程编号,不能当句柄使用
+     * @return
+     */
+    [[nodiscard]] int threadID() const noexcept;
+
+    bool wait(int64_t = -1) noexcept;
+    [[nodiscard]] bool isFinished() const noexcept;
+    [[nodiscard]] bool isRunning() const noexcept;
+    void setPriority(uint32_t) const noexcept;
+
+    template<typename ...Args> void setThreadEntry(Args && ...args) noexcept
+    { setThreadFn(XCallableHelper::createCallable(std::forward<Args>(args)...)); }
+
     virtual ~XAbstractThread();
-    void destroy() noexcept;
 
 private:
-    template <typename , size_t... > static constexpr void Invoke_(void * ) noexcept;
-    template <typename , size_t... Indices_> static constexpr auto GetInvoke_(std::index_sequence<Indices_...>) noexcept;
-    template<typename ...Args_> constexpr void create_(std::size_t ,void * ,void * ,Args_ && ...) noexcept;
-    static void taskReturn() noexcept;
-    void createTask(void(*f)(void*),std::size_t uxStackDepth,void * pvParameters,void * = {},void * = {}) noexcept;
-    constexpr XAbstractThread() = default;
-    void setInfo(void *) noexcept;
+    using CallablePtr = XCallableHelper::CallablePtr;
+    XAbstractThread();
+    explicit XAbstractThread(CallablePtr);
+    void destroy() noexcept;
+    void setThreadFn(CallablePtr);
+    void start(std::size_t ,uint32_t ,void * ,void *) noexcept;
+
     friend class XThreadDynamic;
     template<std::size_t > friend class XThreadStatic;
 };
-
-template <typename Tuple_, size_t... Indices_>
-constexpr void XAbstractThread::Invoke_(void * const RawVals_) noexcept {
-    XUniquePtr<Tuple_> const FnVals_(static_cast<Tuple_*>(RawVals_));
-    auto & Tup_ {*FnVals_};
-    std::invoke(std::get<Indices_>(std::forward<Tuple_>(Tup_))...);
-    taskReturn();
-}
-
-template <typename Tuple_, size_t... Indices_>
-constexpr auto XAbstractThread::GetInvoke_(std::index_sequence<Indices_...>) noexcept
-{ return &Invoke_<Tuple_, Indices_...>; }
-
-template<typename ...Args_>
-constexpr void XAbstractThread::create_(std::size_t const stack_depth,void * const puxStackBuffer
-    ,void * const pxTaskBuffer,Args_ && ...args) noexcept
-{
-    using Tuple_ = std::tuple<std::decay_t<Args_>...>;
-    auto Decay_copied_ { makeUnique<Tuple_>(std::forward<Args_>(args)...) };
-    constexpr auto Invoker_proc { GetInvoke_<Tuple_>(std::make_index_sequence<sizeof...(Args_)>{}) };
-    createTask(Invoker_proc,stack_depth,Decay_copied_.release(),puxStackBuffer,pxTaskBuffer);
-}
 
 #endif

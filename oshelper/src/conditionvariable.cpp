@@ -29,11 +29,11 @@ ConditionVariableAny::ConditionVariableAny() = default;
 ConditionVariableAny::~ConditionVariableAny() = default;
 
 void ConditionVariableAny::notify_one() const noexcept
-{ (void)m_semaphore_.releases(); }
+{ if (m_waiters_.loadAcquire()) { (void)m_semaphore_.releases(); } }
 
 void ConditionVariableAny::notify_all() const noexcept {
-    auto const n { m_waiters_.loadAcquire() };
-    for (size_t i {}; i < n; ++i)
+    auto const waiters{ m_waiters_.loadAcquire() };
+    for (std::size_t i {}; i < waiters; ++i)
     { (void)m_semaphore_.releases(); }
 }
 
