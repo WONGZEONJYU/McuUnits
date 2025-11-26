@@ -7,7 +7,7 @@ void XTaskBase::exit_() noexcept
 { m_isRunning_.storeRelease({}); }
 
 void XTaskBase::start(std::size_t const stack_depth) noexcept {
-    if (!m_th_.thread_handle())
+    if (!m_th_.threadHandle())
     { m_th_ = XThreadDynamic(&XTaskBase::run,this); }
     m_isRunning_.storeRelease(true);
     m_th_.start(stack_depth);

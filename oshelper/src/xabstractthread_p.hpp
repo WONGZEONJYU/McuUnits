@@ -5,7 +5,6 @@
 #include <conditionvariable.hpp>
 #include <mutex.hpp>
 
-#if 1
 class XAbstractThreadPrivate final : public XAbstractThreadData {
 
 public:
@@ -17,13 +16,13 @@ public:
 
     XAtomicInt m_id{-1};
     XAtomicPointer<void> m_threadID{};
+    XAtomicBool m_finished{true},m_running{};
 
     Mutex m_mtx{};
     ConditionVariableAny m_cv{};
-    XAtomicBool m_finished{true};
     CallablePtr m_fn{};
 
-    static void start(void *);
+    static void start(void *) noexcept;
     explicit XAbstractThreadPrivate() = default;
     ~XAbstractThreadPrivate() override = default;
     void startHelper(std::size_t,uint32_t
@@ -34,5 +33,4 @@ public:
     void setPriority(uint32_t) const noexcept;
 };
 
-#endif
 #endif
