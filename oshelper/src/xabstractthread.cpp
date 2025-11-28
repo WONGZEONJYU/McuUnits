@@ -60,7 +60,7 @@ void XAbstractThreadPrivate::setInfo(void * const thID) noexcept {
 }
 
 bool XAbstractThreadPrivate::waitHelper(int64_t const timeOut) noexcept {
-    if (m_finished.loadAcquire() || !m_running.loadAcquire()) { return true; }
+    if (m_finished.loadAcquire() || m_detached.loadAcquire() || !m_running.loadAcquire()) { return true; }
     auto const pts{ timeOut < 0 ? portMAX_DELAY : static_cast<TickType_t>(timeOut) };
     std::unique_lock lk{m_mtx};
     return m_cv.wait_for(lk,pts,[this]()noexcept
@@ -73,6 +73,7 @@ void XAbstractThreadPrivate::finished() noexcept {
     m_id.storeRelease(-1);
     m_running.storeRelease({});
     m_th_cnt.fetchAndSubOrdered(1);
+    if (m_detached.loadAcquire()) { return; }
     m_cv.notify_all();
 }
 
@@ -105,6 +106,9 @@ int XAbstractThread::threadID() const noexcept
 
 bool XAbstractThread::wait(int64_t const v) noexcept
 { return d_func()->waitHelper(v); }
+
+void XAbstractThread::detach() noexcept
+{ d_func()->m_detached.storeRelease(true); }
 
 bool XAbstractThread::isFinished() const noexcept
 { return d_func()->m_finished.loadAcquire(); }

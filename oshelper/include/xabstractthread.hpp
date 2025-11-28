@@ -38,6 +38,10 @@ public:
     [[nodiscard]] int threadID() const noexcept;
 
     bool wait(int64_t = -1) noexcept;
+    /**
+     * 如果调用了detach(),wait不再有效,永远返回true
+     */
+    void detach() noexcept;
     [[nodiscard]] bool isFinished() const noexcept;
     [[nodiscard]] bool isRunning() const noexcept;
     void setPriority(uint32_t) const noexcept;

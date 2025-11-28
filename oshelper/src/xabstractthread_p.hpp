@@ -16,7 +16,8 @@ public:
 
     XAtomicInt m_id{-1};
     XAtomicPointer<void> m_threadID{};
-    XAtomicBool m_finished{true},m_running{};
+    XAtomicBool m_finished{true}
+        ,m_running{},m_detached{};
 
     Mutex m_mtx{};
     ConditionVariableAny m_cv{};
