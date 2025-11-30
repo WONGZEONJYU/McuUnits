@@ -193,7 +193,7 @@ inline namespace XContainer {
         auto const subRange { std::ranges::subrange( start ,start + std::ranges::min(e,c.size()) ) };
         return { subRange.cbegin() , subRange.cend() };
     }
-
+#if 0
     template<typename Con_>
     constexpr auto append(Con_ & c,typename Con_::const_reference v) noexcept -> Con_ &
     { c.push_back(v); return c; }
@@ -201,6 +201,7 @@ inline namespace XContainer {
     template<typename Con_>
     constexpr auto append(Con_ & c,typename Con_::value_type && v) noexcept -> Con_ &
     { c.push_back(std::forward<decltype(v)>(v)); return c; }
+#endif
 
     template<typename Con_,typename Con_R >
     requires std::ranges::range<Con_> && std::ranges::input_range<Con_R>
@@ -212,6 +213,10 @@ inline namespace XContainer {
     constexpr auto append(Con_ & c , typename Con_::const_pointer const d,std::size_t const length)
     noexcept -> Con_ &
     { return append(c,std::ranges::subrange{d, d + length } ); }
+
+    template<typename Con_,typename ...Args> requires std::is_constructible_v<Con_,Args...>
+    constexpr auto append(Con_ & c,Args && ...args) noexcept -> Con_ &
+    { (c.push_back(std::forward<Args>(args)),...); return c; }
 
     XString trim(XString const & str) noexcept;
 
