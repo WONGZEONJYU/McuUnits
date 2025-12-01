@@ -212,7 +212,6 @@ inline namespace XContainer {
         && !(sizeof...(Args) == 1 && is_initializer_list_v<std::remove_cvref_t<std::tuple_element_t<0, std::tuple<Args...>>>>)
         && (std::is_constructible_v<typename Con_::value_type, Args&&> && ...)
     )
-
     constexpr auto append(Con_ & c, Args && ...args) noexcept -> Con_ &
     { (c.push_back(std::forward<Args>(args)), ...); return c; }
 
