@@ -17,6 +17,7 @@
 #include <sstream>
 #include <string>
 #include <charconv>
+#include <xtypetraits.hpp>
 
 inline namespace XContainer {
 
@@ -193,30 +194,32 @@ inline namespace XContainer {
         auto const subRange { std::ranges::subrange( start ,start + std::ranges::min(e,c.size()) ) };
         return { subRange.cbegin() , subRange.cend() };
     }
-#if 0
-    template<typename Con_>
-    constexpr auto append(Con_ & c,typename Con_::const_reference v) noexcept -> Con_ &
-    { c.push_back(v); return c; }
-
-    template<typename Con_>
-    constexpr auto append(Con_ & c,typename Con_::value_type && v) noexcept -> Con_ &
-    { c.push_back(std::forward<decltype(v)>(v)); return c; }
-#endif
 
     template<typename Con_,typename Con_R >
     requires std::ranges::range<Con_> && std::ranges::input_range<Con_R>
-    constexpr auto append(Con_ & fst ,Con_R const & snd) noexcept -> Con_ &
-    { fst.insert(fst.cend(),snd.cbegin(),snd.cend()); return fst; }
+    constexpr auto append(Con_ & c ,Con_R const & snd) noexcept -> Con_ &
+    { c.insert(c.cend(), snd.begin(), snd.end());return c; }
 
     template<typename Con_>
     requires std::ranges::range<Con_>
-    constexpr auto append(Con_ & c , typename Con_::const_pointer const d,std::size_t const length)
-    noexcept -> Con_ &
-    { return append(c,std::ranges::subrange{d, d + length } ); }
+    constexpr auto append(Con_ & c , typename Con_::const_pointer d, std::size_t const length)
+    noexcept -> Con_ & { return append(c,std::ranges::subrange{d, d + length}); }
 
-    template<typename Con_,typename ...Args> requires std::conjunction_v<std::is_constructible<Con_,Args&&>...>
-    constexpr auto append(Con_ & c,Args && ...args) noexcept -> Con_ &
-    { (c.push_back(std::forward<Args>(args)),...); return c; }
+    template<typename Con_, typename ...Args>
+    requires (
+        std::ranges::range<Con_>
+        // 禁止 append(c, il) 落入 Args... 重载
+        && !(sizeof...(Args) == 1 && is_initializer_list_v<std::remove_cvref_t<std::tuple_element_t<0, std::tuple<Args...>>>>)
+        && (std::is_constructible_v<typename Con_::value_type, Args&&> && ...)
+    )
+
+    constexpr auto append(Con_ & c, Args && ...args) noexcept -> Con_ &
+    { (c.push_back(std::forward<Args>(args)), ...); return c; }
+
+    template<typename Con_>
+    requires std::ranges::range<Con_>
+    constexpr auto append(Con_ & c, std::initializer_list<typename Con_::value_type> il)
+    noexcept -> Con_ & { return append(c,std::ranges::subrange{il.begin(), il.end()}); }
 
     XString trim(XString const & str) noexcept;
 
