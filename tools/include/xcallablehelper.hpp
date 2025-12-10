@@ -44,6 +44,8 @@ class XCallableHelper {
         constexpr void operator()() const override { m_callable_(); }
     };
 
+    template<typename Callable> XCallable(Callable) -> XCallable<Callable>;
+
     using CallablePtr_ = std::shared_ptr<XAbstractCallable>;
 
     struct XFactoryCallable {
