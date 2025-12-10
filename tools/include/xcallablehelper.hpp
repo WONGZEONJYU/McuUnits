@@ -47,7 +47,9 @@ class XCallableHelper {
     using CallablePtr_ = std::shared_ptr<XAbstractCallable>;
 
     struct XFactoryCallable {
+
         XFactoryCallable() = delete;
+
         template<typename Callable_>
         static constexpr auto create(Callable_ && call) noexcept -> CallablePtr_ {
             using XCallable_t = XCallable<Callable_>;
@@ -77,10 +79,8 @@ class XCallableHelper {
         constexpr XInvoker(Tuple && t,Private_) noexcept
         :m_fnAndArgs_{std::forward<Tuple>(t)}{}
 
-        constexpr result_t operator()() const {
-            using Indices_ = std::make_index_sequence<std::tuple_size_v<Tuple>>;
-            return M_invoke_(Indices_{});
-        }
+        constexpr result_t operator()() const
+        { return M_invoke_(std::make_index_sequence<std::tuple_size_v<Tuple>>{}); }
 
     private:
         template<std::size_t... Ind>
@@ -88,10 +88,13 @@ class XCallableHelper {
         { return std::invoke(std::get<Ind>(std::forward<decltype(m_fnAndArgs_)>(m_fnAndArgs_))...); }
     };
 
+    template<typename Tuple> XInvoker(Tuple) -> XInvoker<Tuple>;
+
     template<typename... Tp>
     using decayedTuple_ = std::tuple<std::decay_t<Tp>...>;
 
     struct Factory final {
+
         Factory() = delete;
 
         template<typename... Args>
