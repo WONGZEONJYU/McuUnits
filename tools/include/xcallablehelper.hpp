@@ -47,7 +47,9 @@ class XCallableHelper {
     using CallablePtr_ = std::shared_ptr<XAbstractCallable>;
 
     struct XFactoryCallable {
+
         XFactoryCallable() = delete;
+
         template<typename Callable_>
         static constexpr auto create(Callable_ && call) noexcept -> CallablePtr_ {
             using XCallable_t = XCallable<Callable_>;
@@ -96,6 +98,7 @@ class XCallableHelper {
     using decayedTuple_ = std::tuple<std::decay_t<Tp>...>;
 
     struct Factory final {
+
         Factory() = delete;
 
         template<typename... Args>
