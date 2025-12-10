@@ -84,7 +84,7 @@ class XCallableHelper {
 
     private:
         template<std::size_t... Ind>
-        constexpr result_<Tuple>::type M_invoke_(std::index_sequence<Ind...>) const
+        constexpr result_t M_invoke_(std::index_sequence<Ind...>) const
         { return std::invoke(std::get<Ind>(std::forward<decltype(m_fnAndArgs_)>(m_fnAndArgs_))...); }
     };
 
