@@ -79,10 +79,6 @@ class XCallableHelper {
         constexpr XInvoker(Tuple && t,Private_) noexcept
         :m_fnAndArgs_{std::forward<Tuple>(t)}{}
 
-        template<typename Tuple_>
-        constexpr XInvoker(Tuple_ && t,Private_) noexcept
-        :m_fnAndArgs_{std::forward<Tuple_>(t)} {}
-
         constexpr result_t operator()() const
         { return M_invoke_(std::make_index_sequence<std::tuple_size_v<Tuple>>{}); }
 
