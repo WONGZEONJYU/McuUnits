@@ -4,7 +4,6 @@
 #include <xmemory.hpp>
 #include <xcallablehelper.hpp>
 
-#if 1
 class XAbstractThread;
 class XAbstractThreadPrivate;
 
@@ -15,7 +14,6 @@ public:
     virtual ~XAbstractThreadData() = default;
     XAbstractThread * q_ptr{};
 };
-#endif
 
 class XAbstractThread {
 
