@@ -1,6 +1,7 @@
 #include <abstractiic.hpp>
 #include <abstractgpio.hpp>
 #include <xhelper.hpp>
+#include <xraii.hpp>
 
 void AbstractIIC::start() const noexcept {
     sdaDir(true);
@@ -105,7 +106,7 @@ int64_t AbstractIIC::read(void * const dst, std::size_t const len, int64_t) noex
 
     CHECK_EMPTY(dst,return -1);
 
-    XRAII const r {[this]{start();},[this]{stop();}};
+    X_RAII const r {[this]{start();},[this]{stop();}};
 
     auto const pd { static_cast<uint8_t*>(dst) };
 
@@ -130,7 +131,7 @@ int64_t AbstractIIC::read(void * const dst , std::size_t const len , int64_t) co
 
 int64_t AbstractIIC::write(const void * const src , std::size_t const len, int64_t) noexcept {
     CHECK_EMPTY(src,return -1);
-    XRAII const r {[this]{start();},[this]{stop();}};
+    X_RAII const r {[this]{start();},[this]{stop();}};
     auto const pd { static_cast<const uint8_t*>(src) };
     int64_t c {};
     for (;c < len;++c) { if(!send(pd[c] ,true)) { return -2; } }
