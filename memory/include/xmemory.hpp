@@ -452,9 +452,9 @@ inline namespace mem {
                 noexcept -> Object *
             {
                 auto const raw_ptr { std::allocator_traits<Allocator>::allocate(sm_allocator_, 1) };
-                auto const obj_ptr { new (raw_ptr) Object( std::get<I1>( std::forward< decltype( args1 ) >( args1 ) )... ) };
+                auto const obj_ptr { new (raw_ptr) Object( std::get<I1>( std::forward< ArgsList1 >( args1 ) )... ) };
                 ObjectUPtr obj { obj_ptr, Deleter {} };
-                return obj->construct_( std::get<I2>( std::forward< decltype( args2 ) >( args2 ) )... ) ? obj.release() : nullptr;
+                return obj->construct_( std::get<I2>( std::forward< ArgsList2 >( args2 ) )... ) ? obj.release() : nullptr;
             }( XPrivate::indices( args1 ) ,XPrivate::indices( args2 ) );
         }
 
@@ -463,8 +463,8 @@ inline namespace mem {
         static constexpr auto CreateUniquePtr ( ArgsList1 && args1 = {},ArgsList2 && args2 = {} )
             noexcept -> ObjectUPtr
         {
-            return { Create( std::forward< decltype( args1 ) >( args1 )
-                ,std::forward< decltype( args2 ) >( args2 ) ) ,Deleter {} };
+            return { Create( std::forward< ArgsList1 >( args1 )
+                ,std::forward< ArgsList2 >( args2 ) ) ,Deleter {} };
         }
 
         template<typename ArgsList1 = Parameter<> ,typename ArgsList2 = Parameter<> >
@@ -472,8 +472,8 @@ inline namespace mem {
         static constexpr auto CreateSharedPtr ( ArgsList1 && args1 = {} ,ArgsList2 && args2 = {} )
             noexcept -> ObjectSPtr
         {
-            return ObjectSPtr { Create( std::forward< decltype( args1 ) >( args1 )
-                ,std::forward< decltype( args2 ) >( args2 ) ) ,Deleter{} , sm_allocator_ };
+            return ObjectSPtr { Create( std::forward< ArgsList1 >( args1 )
+                ,std::forward< ArgsList2 >( args2 ) ) ,Deleter{} , sm_allocator_ };
         }
 
     protected:
@@ -507,8 +507,8 @@ inline namespace mem {
             STATIC_ASSERT_P
 
             allocate_([&args1,&args2]()noexcept{
-                return Base_::CreateSharedPtr(std::forward< decltype(args1) >(args1)
-                        ,std::forward<decltype(args2) >(args2));
+                return Base_::CreateSharedPtr(std::forward< ArgsList1 >(args1)
+                        ,std::forward< ArgsList2 >(args2));
             });
 
             return data();

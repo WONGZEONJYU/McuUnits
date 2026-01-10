@@ -11,14 +11,14 @@
  * 这里为什么这样绕一层呢,是防止编译器一些警告
  */
 template<typename ...Args>
-auto bind(Args && ...args) -> decltype(std::bind(std::forward<decltype(args)>(args)...))
-{ return std::bind(std::forward<decltype(args)>(args)...); }
+auto bind(Args && ...args) -> decltype(std::bind(std::forward<Args>(args)...))
+{ return std::bind(std::forward<Args>(args)...); }
 
 #else
 
 template <typename ...Args>
 auto bind(Args && ...args)
-{ return [&args...]{ return std::invoke(std::forward<decltype(args)>(args)...); }; }
+{ return [&args...]{ return std::invoke(std::forward<Args>(args)...); }; }
 
 #endif
 
@@ -36,7 +36,7 @@ public:
      */
     template<typename Fn_>
     constexpr explicit Destroyer(Fn_ && f)
-        : m_fn_ { std::forward<decltype(f)>(f) }
+        : m_fn_ { std::forward<Fn_>(f) }
     , m_is_destroy {}
     {}
 
@@ -61,8 +61,8 @@ public:
      */
     template<typename Fn1,typename Fn2>
     constexpr explicit X_RAII(Fn1 && fn1,Fn2 && fn2)
-        : Destroyer { std::forward<decltype(fn2)>(fn2) }
-    { std::forward<decltype(fn1)>(fn1)(); }
+        : Destroyer { std::forward<Fn2>(fn2) }
+    { std::forward<Fn1>(fn1)(); }
 
     ~X_RAII() override = default;
 
