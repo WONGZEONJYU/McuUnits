@@ -1,6 +1,8 @@
 #ifndef X_COROUTINE_HPP
 #define X_COROUTINE_HPP 1
 
+#if 0
+
 #include <coroutine>
 #include <cassert>
 #include <functional>
@@ -135,5 +137,7 @@ struct XCoroutineGeneratorHash<XCoroutineGenerator<Promise>> {
         return seed;
     }
 };
+
+#endif
 
 #endif
