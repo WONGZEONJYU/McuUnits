@@ -9,15 +9,15 @@ public:
     using Type = T;
     using Ops = std::conditional_t<std::is_same_v<Type,bool>,XAtomicOpsBase<T>,XAtomicOps<T>>;
     using AtomicType = Ops::Type;
-    AtomicType m_x_value{};
+    AtomicType m_x_value {};
 
     Type loadRelaxed() const noexcept { return Ops::loadRelaxed(m_x_value); }
     void storeRelaxed(Type const & newValue) noexcept { Ops::storeRelaxed(m_x_value, newValue); }
 
     Type loadAcquire() const noexcept { return Ops::loadAcquire(m_x_value); }
     void storeRelease(Type const & newValue) noexcept { Ops::storeRelease(m_x_value, newValue); }
-    operator Type() const noexcept { return loadAcquire(); }
-    [[maybe_unused]] Type operator=(Type const & newValue) noexcept { storeRelease(newValue); return newValue; }
+    explicit(false) operator Type() const noexcept { return loadAcquire(); }
+    Type operator=(Type const & newValue) noexcept { storeRelease(newValue); return newValue; }
 
     static constexpr bool isTestAndSetNative() noexcept { return Ops::isTestAndSetNative(); }
     static constexpr bool isTestAndSetWaitFree() noexcept { return Ops::isTestAndSetWaitFree(); }
@@ -53,7 +53,8 @@ public:
     { return Ops::fetchAndStoreOrdered(m_x_value, newValue); }
 
     XBasicAtomic() = default;
-    explicit constexpr XBasicAtomic(T const & value ) noexcept : m_x_value(value) {}
+    explicit(false) constexpr XBasicAtomic(T const & value) noexcept
+        : m_x_value {value} { }
     XBasicAtomic(const XBasicAtomic &) = delete;
     XBasicAtomic &operator=(const XBasicAtomic &) = delete;
     XBasicAtomic &operator=(const XBasicAtomic &) volatile = delete;
@@ -66,6 +67,7 @@ class XBasicAtomicInteger : public XBasicAtomic<T> {
     static_assert(XAtomicOpsSupport<sizeof(T)>::IsSupported, "template parameter is an integral of a size not supported on this platform");
     using Base_ = XBasicAtomic<T>;
     using Ops = Base_::Ops;
+
 public:
     bool ref() noexcept { return Ops::ref(this->m_x_value); }
     bool deref() noexcept { return Ops::deref(this->m_x_value); }
@@ -127,22 +129,23 @@ public:
     T operator--(int) noexcept
     { return fetchAndSubOrdered(1); }
 
-    T operator+=(const T &v) noexcept
+    T operator+=(T const & v) noexcept
     { return fetchAndAddOrdered(v) + v; }
-    T operator-=(const T &v) noexcept
+    T operator-=(T const & v) noexcept
     { return fetchAndSubOrdered(v) - v; }
-    T operator&=(const T &v) noexcept
+    T operator&=(T const & v) noexcept
     { return fetchAndAndOrdered(v) & v; }
-    T operator|=(const T &v) noexcept
+    T operator|=(T const & v) noexcept
     { return fetchAndOrOrdered(v) | v; }
-    T operator^=(const T &v) noexcept
+    T operator^=(T const & v) noexcept
     { return fetchAndXorOrdered(v) ^ v; }
 
     XBasicAtomicInteger() = default;
-    constexpr XBasicAtomicInteger(T const & value) noexcept : Base_(value) {}
-    XBasicAtomicInteger(const XBasicAtomicInteger &) = delete;
-    XBasicAtomicInteger &operator=(const XBasicAtomicInteger &) = delete;
-    XBasicAtomicInteger &operator=(const XBasicAtomicInteger &) volatile = delete;
+    explicit(false) constexpr XBasicAtomicInteger(T const & value) noexcept
+        : Base_ {value} { }
+    XBasicAtomicInteger(XBasicAtomicInteger const &) = delete;
+    XBasicAtomicInteger &operator=(XBasicAtomicInteger const &) = delete;
+    XBasicAtomicInteger &operator=(XBasicAtomicInteger const &) volatile = delete;
 };
 
 using XBasicAtomicInt [[maybe_unused]] = XBasicAtomicInteger<int>;
@@ -153,7 +156,7 @@ public:
     using Type = X*;
     using Ops = XAtomicOps<Type>;
     using AtomicType = Ops::Type;
-    AtomicType m_x_value;
+    AtomicType m_x_value {};
 
     Type loadRelaxed() const noexcept { return Ops::loadRelaxed(m_x_value); }
     void storeRelaxed(Type const & newValue) noexcept { Ops::storeRelaxed(m_x_value, newValue); }
@@ -233,7 +236,8 @@ public:
     { return fetchAndSubOrdered(valueToSub) - valueToSub; }
 
     XBasicAtomicPointer() = default;
-    explicit constexpr XBasicAtomicPointer(Type const & value) noexcept : m_x_value(value) {}
+    explicit(false) constexpr XBasicAtomicPointer(Type const & value = {}) noexcept
+        : m_x_value {value} { }
     XBasicAtomicPointer(XBasicAtomicPointer const &) = delete;
     XBasicAtomicPointer &operator=(XBasicAtomicPointer const &) = delete;
     XBasicAtomicPointer &operator=(XBasicAtomicPointer const &) volatile = delete;
