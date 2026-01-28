@@ -79,4 +79,6 @@ typedef unsigned long long ullBase_Type;
 #define X_IMPLICIT
 #endif
 
+#define X_FOREVER while(true)
+
 #endif
