@@ -1,9 +1,8 @@
-#ifndef W_GLOBAL_HPP
-#define W_GLOBAL_HPP 1
+#ifndef X_CLASS_HELPER_MACROS_HPP
+#define X_CLASS_HELPER_MACROS_HPP 1
 
-#include <xclasshelpermacros.hpp>
+#pragma once
 
-#if 0
 /********************************************************信号槽部分，请勿乱用*********************************************/
 #define W_DISABLE_COPY(Class) \
     Class(const Class &) = delete;\
@@ -74,6 +73,10 @@ typedef unsigned long long ullBase_Type;
 #define _AT_ADDRESS_(name)	__attribute__((section(#name)))
 #define __ALIGNED(x)        __attribute__((aligned(x)))
 
+#ifdef __cpp_conditional_explicit
+#define X_IMPLICIT explicit(false)
+#else
+#define X_IMPLICIT
 #endif
 
 #endif
