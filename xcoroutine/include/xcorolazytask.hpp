@@ -42,12 +42,16 @@ namespace CORO {
         using promise_type = detail::LazyTaskPromise<T>;
         using value_type = T;
 
+#if 0
         ~XCoroLazyTask() override {
 #ifndef NDEBUG
             if (this->m_coroutine_ && !this->m_coroutine_.done())
             { std::cerr << "XCoroLazyTask destroyed before it was awaited!"; }
 #endif
         }
+#else
+        constexpr ~XCoroLazyTask() override = default;
+#endif
 
         constexpr auto operator co_await() const noexcept {
 
@@ -75,15 +79,15 @@ namespace CORO {
 
         constexpr XCoroLazyTask() noexcept = default;
 
-        X_IMPLICIT constexpr XCoroLazyTask(coroutine_handle const h)
+        X_IMPLICIT constexpr XCoroLazyTask(coroutine_handle const h) noexcept
             : Base { h }
         {   }
 
-        X_IMPLICIT constexpr XCoroLazyTask(promise_type & promise)
+        X_IMPLICIT constexpr XCoroLazyTask(promise_type & promise) noexcept
             : XCoroLazyTask { coroutine_handle::from_promise(promise) }
         {   }
 
-        X_IMPLICIT constexpr XCoroLazyTask(promise_type * const promise)
+        X_IMPLICIT constexpr XCoroLazyTask(promise_type * const promise) noexcept
             : XCoroLazyTask { *promise }
         {   }
     };
