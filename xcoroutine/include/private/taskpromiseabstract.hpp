@@ -24,7 +24,8 @@ namespace CORO::detail{
             : m_awaitingCoroutines_ { std::move(awaitingCoroutines) }
         {   }
 
-        static constexpr bool await_ready() noexcept { return {}; }
+        static constexpr bool await_ready() noexcept
+        { return {}; }
 
         template<typename Promise>
         void await_suspend(std::coroutine_handle<Promise> const h) noexcept {
@@ -50,25 +51,25 @@ namespace CORO::detail{
         constexpr auto final_suspend() noexcept
         { return TaskFinalSuspend {std::move(m_awaitingCoroutines_) }; }
 
-        constexpr void addAwaitingCoroutine(std::coroutine_handle<> const awaitingCoroutine)
+        constexpr void addAwaitingCoroutine(std::coroutine_handle<> const awaitingCoroutine) noexcept
         { m_awaitingCoroutines_.push_back(awaitingCoroutine); }
 
         [[nodiscard]] constexpr bool hasAwaitingCoroutine() const noexcept
         { return !m_awaitingCoroutines_.empty(); }
 
-        void derefCoroutine()
+        void derefCoroutine() noexcept
         { if (!m_ref_.deref()) { destroyCoroutine(); } }
 
         void refCoroutine() noexcept
         { m_ref_.ref(); }
 
-        void destroyCoroutine() {
+        void destroyCoroutine() noexcept{
             m_ref_.storeRelaxed({});
             auto const handle { std::coroutine_handle<TaskPromiseAbstract>::from_promise(*this) };
             handle.destroy();
         }
 
-        constexpr virtual ~TaskPromiseAbstract() = default;
+        constexpr virtual ~TaskPromiseAbstract() noexcept = default;
 
     protected:
         constexpr TaskPromiseAbstract() noexcept = default;

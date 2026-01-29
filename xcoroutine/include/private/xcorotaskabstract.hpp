@@ -29,7 +29,7 @@ namespace CORO::detail {
 
     template<typename T, template<typename> class TaskImpl, typename PromiseType>
     class XCoroTaskAbstract {
-        static auto constexpr ErrCallBack { []<typename Tp>(Tp && ){ std::terminate(); } };
+        static auto constexpr ErrCallBack { []<typename Tp>(Tp && ) noexcept { std::terminate(); } };
     protected:
         using coroutine_handle = std::coroutine_handle<PromiseType>;
         coroutine_handle m_coroutine_ {};
@@ -54,7 +54,7 @@ namespace CORO::detail {
         virtual ~XCoroTaskAbstract()
         { if (m_coroutine_) { m_coroutine_.promise().derefCoroutine(); } }
 
-        [[nodiscard]] constexpr bool isReady() const
+        [[nodiscard]] constexpr bool isReady() const noexcept
         { return !m_coroutine_ || m_coroutine_.done(); }
 
         constexpr auto operator co_await() const noexcept;
