@@ -16,6 +16,18 @@
     W_DISABLE_COPY(Class)           \
     W_DISABLE_MOVE(Class)
 
+#define W_DEFAULT_COPY(...) \
+    __VA_ARGS__ (const __VA_ARGS__ &) = default;\
+    __VA_ARGS__ &operator=(const __VA_ARGS__ &) = default;
+
+#define W_DEFAULT_MOVE(...)\
+    __VA_ARGS__ (__VA_ARGS__ &&) noexcept = default; \
+    __VA_ARGS__ &operator=(__VA_ARGS__ &&) noexcept = default;
+
+#define W_DEFAULT_COPY_MOVE(...) \
+    X_DEFAULT_COPY(__VA_ARGS__) \
+    X_DEFAULT_MOVE(__VA_ARGS__)
+
 template <typename T> T * wGetPtrHelper(T * const ptr) noexcept { return ptr; }
 template <typename Ptr> auto wGetPtrHelper(Ptr & ptr) noexcept -> decltype(ptr.get())
 { static_assert(noexcept(ptr.get()), "Smart d pointers for X_DECLARE_PRIVATE must have noexcept get()"); return ptr.get(); }
