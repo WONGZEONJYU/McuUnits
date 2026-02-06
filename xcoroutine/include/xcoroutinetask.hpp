@@ -40,8 +40,8 @@ namespace CORO
 
     namespace detail {
 
-        constexpr  XCoroTaskVoid TaskPromiseVoid::get_return_object() noexcept
-        { return { this }; }
+        constexpr XCoroTaskVoid TaskPromiseVoid::get_return_object() noexcept
+        { return this; }
 
         template <typename T>
         concept TaskConvertible = requires(T val, TaskPromiseAbstract promise)
