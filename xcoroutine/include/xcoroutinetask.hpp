@@ -40,7 +40,7 @@ namespace CORO
 
     namespace detail {
 
-        inline XCoroTaskVoid TaskPromiseVoid::get_return_object() noexcept
+        constexpr  XCoroTaskVoid TaskPromiseVoid::get_return_object() noexcept
         { return { this }; }
 
         template <typename T>
