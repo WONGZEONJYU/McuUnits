@@ -4,7 +4,9 @@
 
 #if defined(FREERTOS) || defined(USE_FREERTOS)
 #include <task.h>
-#include <cmsis_gcc.h>
+extern "C"{
+#include <cmsis_compiler.h>
+}
 
 void XAbstractThreadPrivate::start(void * const args) noexcept {
     auto const thr{ static_cast<XAbstractThreadPrivate*>(args) };
