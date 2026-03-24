@@ -22,9 +22,9 @@ auto bind(Args && ...args)
 
 #endif
 
-class X_RAII;
+class XSpace;
 
-class Destroyer {
+class AutoDestroyer {
 
     std::function<void()> m_fn_ {};
     mutable uint32_t m_is_destroy:1;
@@ -35,7 +35,7 @@ public:
      * Destroyer d {  XUtils::bing([](int){},1)  };
      */
     template<typename Fn_>
-    constexpr explicit Destroyer(Fn_ && f)
+    constexpr explicit AutoDestroyer(Fn_ && f)
         : m_fn_ { std::forward<Fn_>(f) }
     , m_is_destroy {}
     {}
@@ -47,12 +47,12 @@ public:
         }
     }
 
-    virtual ~Destroyer() { destroy(); }
+    virtual ~AutoDestroyer() { destroy(); }
 
-    W_DISABLE_COPY_MOVE(Destroyer)
+    W_DISABLE_COPY_MOVE(AutoDestroyer)
 };
 
-class X_RAII final : public Destroyer {
+class XSpace final : public AutoDestroyer {
 
 public:
     /**
@@ -60,13 +60,13 @@ public:
      * X_RAII r { XUtils::bind([](int){},1) , XUtils::bind([](char){},'f') };
      */
     template<typename Fn1,typename Fn2>
-    constexpr explicit X_RAII(Fn1 && fn1,Fn2 && fn2)
-        : Destroyer { std::forward<Fn2>(fn2) }
+    constexpr explicit XSpace(Fn1 && fn1,Fn2 && fn2)
+        : AutoDestroyer { std::forward<Fn2>(fn2) }
     { std::forward<Fn1>(fn1)(); }
 
-    ~X_RAII() override = default;
+    ~XSpace() override = default;
 
-    W_DISABLE_COPY_MOVE(X_RAII)
+    W_DISABLE_COPY_MOVE(XSpace)
 };
 
 #endif

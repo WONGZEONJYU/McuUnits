@@ -5,6 +5,7 @@
 
 #if defined(FREERTOS) || defined(USE_FREERTOS)
 #include <task.h>
+#include <cmsis_gcc.h>
 
 void XAbstractThreadPrivate::start(void * const args) noexcept {
     auto const thr{ static_cast<XAbstractThreadPrivate*>(args) };
@@ -93,7 +94,7 @@ void XAbstractThread::yield() noexcept
 { taskYIELD();}
 
 bool XAbstractThread::isRunningInThread() noexcept
-{ return xPortIsInsideInterrupt() == pdFALSE; }
+{ return !__get_IPSR(); }
 
 std::size_t XAbstractThread::threadCount() noexcept
 { return XAbstractThreadPrivate::m_th_cnt.loadAcquire(); }

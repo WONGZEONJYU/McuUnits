@@ -1,9 +1,8 @@
-#ifndef W_GLOBAL_HPP
-#define W_GLOBAL_HPP 1
+#ifndef X_CLASS_HELPER_MACROS_HPP
+#define X_CLASS_HELPER_MACROS_HPP 1
 
-#include <xclasshelpermacros.hpp>
+#pragma once
 
-#if 0
 /********************************************************信号槽部分，请勿乱用*********************************************/
 #define W_DISABLE_COPY(Class) \
     Class(const Class &) = delete;\
@@ -16,6 +15,18 @@
 #define W_DISABLE_COPY_MOVE(Class)  \
     W_DISABLE_COPY(Class)           \
     W_DISABLE_MOVE(Class)
+
+#define W_DEFAULT_COPY(...) \
+    __VA_ARGS__ (const __VA_ARGS__ &) = default;\
+    __VA_ARGS__ &operator=(const __VA_ARGS__ &) = default;
+
+#define W_DEFAULT_MOVE(...)\
+    __VA_ARGS__ (__VA_ARGS__ &&) noexcept = default; \
+    __VA_ARGS__ &operator=(__VA_ARGS__ &&) noexcept = default;
+
+#define W_DEFAULT_COPY_MOVE(...) \
+    X_DEFAULT_COPY(__VA_ARGS__) \
+    X_DEFAULT_MOVE(__VA_ARGS__)
 
 template <typename T> T * wGetPtrHelper(T * const ptr) noexcept { return ptr; }
 template <typename Ptr> auto wGetPtrHelper(Ptr & ptr) noexcept -> decltype(ptr.get())
@@ -74,6 +85,12 @@ typedef unsigned long long ullBase_Type;
 #define _AT_ADDRESS_(name)	__attribute__((section(#name)))
 #define __ALIGNED(x)        __attribute__((aligned(x)))
 
+#ifdef __cpp_conditional_explicit
+#define X_IMPLICIT explicit(false)
+#else
+#define X_IMPLICIT
 #endif
+
+#define X_FOREVER while(true)
 
 #endif
