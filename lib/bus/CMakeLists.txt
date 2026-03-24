@@ -1,0 +1,6 @@
+CreateStaticModule(
+        TARGET_NAME "XBus"
+        SOURCES_PATH ${CMAKE_CURRENT_SOURCE_DIR}/src
+        INCLUDES_PATH ${CMAKE_CURRENT_SOURCE_DIR}/inc
+        LINK_LIB XTools IO CHAR_DEV
+)

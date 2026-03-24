@@ -1,3 +1,4 @@
+#[[
 # 创建Unit静态库
 set(LIBName Units)
 
@@ -84,3 +85,7 @@ target_compile_options(${LIBName} PUBLIC
 )
 
 unset(LIBName)
+]]
+
+include(cmake/CreateModule.cmake)
+add_subdirectory(lib)

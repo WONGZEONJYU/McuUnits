@@ -1,0 +1,5 @@
+CreateStaticModule(
+        TARGET_NAME "XGlobal"
+        SOURCES_PATH ${CMAKE_CURRENT_SOURCE_DIR}/src
+        INCLUDES_PATH ${CMAKE_CURRENT_SOURCE_DIR}/inc
+)
