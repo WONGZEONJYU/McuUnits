@@ -8,7 +8,6 @@
 #pragma once
 
 #include <xclasshelpermacros.hpp>
-#include <xatomic.hpp>
 #include <private/mixns.hpp>
 #include <coroutine>
 #include <vector>
@@ -42,7 +41,7 @@ namespace CORO::detail{
     class TaskPromiseAbstract : public AwaitTransformMixin {
         friend class TaskFinalSuspend;
         coroutine_handle_vector m_awaitingCoroutines_ {};
-        XAtomicInteger<uint32_t> m_ref_ {1};
+        volatile uint32_t m_ref_ {1};
 
     public:
         static constexpr auto initial_suspend() noexcept
@@ -57,14 +56,16 @@ namespace CORO::detail{
         [[nodiscard]] constexpr bool hasAwaitingCoroutine() const noexcept
         { return !m_awaitingCoroutines_.empty(); }
 
-        void derefCoroutine() noexcept
-        { if (!m_ref_.deref()) { destroyCoroutine(); } }
+        void derefCoroutine() noexcept {
+            if (1 == m_ref_) { destroyCoroutine(); }
+            m_ref_ -= 1;
+        }
 
         void refCoroutine() noexcept
-        { m_ref_.ref(); }
+        { m_ref_ += 1; }
 
         void destroyCoroutine() noexcept{
-            m_ref_.storeRelaxed({});
+            m_ref_ = {};
             auto const handle { std::coroutine_handle<TaskPromiseAbstract>::from_promise(*this) };
             handle.destroy();
         }

@@ -7,7 +7,7 @@ class XTaskBase {
 
     W_DISABLE_COPY_MOVE(XTaskBase)
     XThreadDynamic m_th_;
-    XAtomicBool m_isRunning_{};
+    bool volatile m_isRunning_{};
 
 public:
     void start(std::size_t stack_depth = 1024) noexcept;

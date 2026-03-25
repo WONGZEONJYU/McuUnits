@@ -2,9 +2,9 @@
 #define CONDITION_VARIABLE_HPP 1
 
 #include <mutex>
-#include <xatomic.hpp>
 #if defined(FREERTOS) || defined(USE_FREERTOS)
 #include <semaphore.hpp>
+#include <atomic.h>
 
 class ConditionVariableAny final {
     W_DISABLE_COPY(ConditionVariableAny)
@@ -18,12 +18,13 @@ class ConditionVariableAny final {
     };
 
     template<typename ATOMIC> struct WaiterGuard final {
-        ATOMIC & m_cnt_{};
+        ATOMIC volatile * m_cnt_{};
         W_DISABLE_COPY(WaiterGuard)
-        constexpr explicit WaiterGuard(ATOMIC & a) noexcept : m_cnt_(a)
-        { a.ref(); }
+        constexpr X_IMPLICIT WaiterGuard(ATOMIC volatile & a) noexcept
+         : m_cnt_{std::addressof(a)}
+        { Atomic_Increment_u32(m_cnt_); }
         constexpr ~WaiterGuard() noexcept
-        { m_cnt_.deref(); }
+        { Atomic_Decrement_u32(m_cnt_); }
     };
 
 #if 0
@@ -34,7 +35,7 @@ class ConditionVariableAny final {
 #else
     mutable CountingSemaphore<> m_semaphore_{};
 #endif
-    mutable XAtomicInteger<std::size_t> m_waiters_{};
+    mutable volatile uint32_t m_waiters_{};
 
 public:
     explicit ConditionVariableAny();
