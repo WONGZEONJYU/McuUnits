@@ -18,6 +18,7 @@ endif()
 # 根据检测结果设置编译定义
 if(FREERTOS_DETECTED)
     target_compile_definitions(OsHelper PUBLIC USE_FREERTOS)
+    target_compile_options(OsHelper PUBLIC -Wunused-function)
     message(STATUS "Unit库: 检测到FreeRTOS，已自动启用USE_FREERTOS宏")
 else()
     message(STATUS "Unit库: 未检测到FreeRTOS，某些功能可能不可用")
