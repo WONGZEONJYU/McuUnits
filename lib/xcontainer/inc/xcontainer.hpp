@@ -30,7 +30,7 @@ inline namespace XContainer {
 
         mutable std::array<T,Size_> m_buf_{};
 
-        mutable XAtomicInteger<std::size_t> m_w_{},m_r_{};
+        mutable volatile uint32_t m_w_{},m_r_{};
 
     public:
         using value_type = T;
@@ -45,27 +45,27 @@ inline namespace XContainer {
 
         constexpr void swap(CircularBuffer const & obj) noexcept {
             m_buf_.swap(obj.m_buf_);
-            auto const w { m_w_.loadRelaxed() }, r { m_r_.loadRelaxed() };
-            m_w_.storeRelease(obj.m_w_.loadAcquire());
-            m_r_.storeRelease(obj.m_r_.loadAcquire());
-            obj.m_w_.storeRelease(w);
-            obj.m_r_.storeRelease(r);
+            auto const w{ m_w_ }, r { m_r_ };
+            m_w_ = obj.m_w_;
+            m_r_ = obj.m_r_;
+            obj.m_w_ = w;
+            obj.m_r_ = r;
         }
 
         static constexpr auto capacity() noexcept
         { return Size_; }
 
         constexpr auto empty() const noexcept
-        { return m_w_.loadRelaxed() == m_r_.loadRelaxed(); }
+        { return m_w_ == m_r_; }
 
         constexpr auto full() const noexcept
-        { return Size_ == m_w_.loadRelaxed() - m_r_.loadRelaxed(); }
+        { return Size_ == m_w_ - m_r_; }
 
         [[nodiscard]] constexpr int64_t readableSize() const noexcept {
             if (empty()) { return {}; }
-            if (m_w_.loadRelaxed() > m_r_.loadRelaxed())
-                { return m_w_.loadRelaxed() - m_r_.loadRelaxed(); }
-            return Size_ - m_r_.loadRelaxed() + m_w_.loadRelaxed();
+            if (m_w_ > m_r_)
+                { return m_w_ - m_r_; }
+            return Size_ - m_r_ + m_w_;
         }
 
         [[nodiscard]] constexpr int64_t writableSize() const noexcept {
@@ -74,21 +74,21 @@ inline namespace XContainer {
         }
 
         constexpr void clear() const noexcept {
-            m_r_.storeRelease(0);
-            m_w_.storeRelease(0);
+            m_r_ = {};
+            m_w_ = {};
         }
 
         constexpr bool write(value_type const & d) const noexcept {
             if (full()) { return {}; }
-            m_buf_[m_w_.loadAcquire() % Size_] = d;
-            m_w_.ref();
+            m_buf_[m_w_% Size_] = d;
+            m_w_ += 1;
             return true;
         }
 
         constexpr bool write(value_type && d) const noexcept {
             if (full()) { return {}; }
-            m_buf_[m_w_.loadAcquire() % Size_] = std::move(d);
-            m_w_.ref();
+            m_buf_[m_w_ % Size_] = std::move(d);
+            m_w_ += 1;
             return true;
         }
 
@@ -103,8 +103,8 @@ inline namespace XContainer {
 
         constexpr bool read(value_type & d) const noexcept {
             if (empty()) { return {}; }
-            d = m_buf_[m_r_.loadAcquire() % Size_];
-            m_r_.ref();
+            d = m_buf_[m_r_ % Size_];
+            m_r_ += 1;
             return true;
         }
 
@@ -122,7 +122,7 @@ inline namespace XContainer {
             if (empty()) { return 0; }
             auto const canRead{ std::ranges::min(static_cast<int64_t>(s),readableSize()) };
             int64_t c {};
-            for (auto pos{ m_r_.loadAcquire() % Size_ };c < canRead;++c,++pos)
+            for (auto pos{ m_r_ % Size_ };c < canRead;++c,++pos)
                 { d[c] = m_buf_[pos]; }
             return c;
         }
@@ -139,7 +139,7 @@ inline namespace XContainer {
         template<typename> friend class RingBufferIterator;
 
         std::array<T,N> m_buffer_{};
-        XAtomicInteger<std::size_t> m_head_{},m_tail_{},m_size_{};
+        volatile uint32_t m_head_{},m_tail_{},m_size_{};
 
     public:
         using value_type = T;
@@ -168,25 +168,22 @@ inline namespace XContainer {
         constexpr RingBuffer(RingBuffer &&) = default;
         RingBuffer &operator=(RingBuffer &&) = default;
 
-        constexpr auto size() const noexcept{ return m_size_.loadRelaxed(); }
+        constexpr auto size() const noexcept{ return m_size_; }
         static constexpr auto capacity() noexcept{ return N; }
         constexpr auto empty() const noexcept{ return !size(); }
         constexpr auto full() const noexcept{ return N == size(); }
 
-        constexpr void clear() noexcept {
-            m_size_.storeRelease({});
-            m_head_.storeRelease({});
-            m_tail_.storeRelease({});
-        }
+        constexpr void clear() noexcept
+        { m_size_ = {}; m_head_ = {}; m_tail_ = {}; }
 
         constexpr reference operator[](size_type const pos) noexcept
-        { return m_buffer_[(m_head_.loadAcquire() + pos) % N]; }
+        { return m_buffer_[(m_head_ + pos) % N]; }
 
         constexpr const_reference operator[](size_type const pos) const noexcept
         { return const_cast<RingBuffer&>(*this)[pos]; }
 
         constexpr reference at(size_type const pos) {
-            if (pos < size()) { m_buffer_[(m_head_.loadAcquire() + pos) % N];}
+            if (pos < size()) { m_buffer_[(m_head_ + pos) % N];}
             abort();
         }
 
@@ -194,7 +191,7 @@ inline namespace XContainer {
         { return const_cast<RingBuffer*>(this)->at(pos); }
 
         constexpr reference front() {
-            if(size() > 0) { return m_buffer_[m_head_.loadAcquire()]; }
+            if(size() > 0) { return m_buffer_[m_head_]; }
             abort();
         }
 
@@ -202,7 +199,7 @@ inline namespace XContainer {
         { return const_cast<RingBuffer*>(this)->front(); }
 
         constexpr reference back() {
-            if(size() > 0) {return m_buffer_[m_tail_.loadAcquire()];}
+            if(size() > 0) {return m_buffer_[m_tail_];}
             abort();
         }
 
@@ -217,10 +214,10 @@ inline namespace XContainer {
 
         constexpr value_type pop_front() {
             if (empty()) { abort(); }
-            auto const index{ m_head_.loadAcquire() };
+            auto const index{ m_head_ };
             auto value{ std::move(m_buffer_[index]) };
-            m_head_.storeRelease((index + 1) % N);
-            m_size_.deref();
+            m_head_ = (index + 1) % N;
+            m_size_ -= 1;
             return value;
         }
 
@@ -237,15 +234,15 @@ inline namespace XContainer {
         template<typename Tp> requires std::is_same_v<std::decay_t<Tp>,value_type>
         constexpr void append(Tp && value) {
             if(empty()) {
-                m_size_.ref();
+                m_size_ += 1;
             } else if(!full()) {
-                m_tail_.storeRelease((m_tail_.loadAcquire() + 1) % N);
-                m_size_.ref();
+                m_tail_ = (m_tail_ + 1) % N;
+                m_size_ += 1;
             } else {
-                m_head_.storeRelease((m_head_.loadAcquire() + 1) % N);
-                m_tail_.storeRelease((m_tail_.loadAcquire() + 1) % N);
+                m_head_ = (m_head_ + 1) % N;
+                m_tail_ = (m_tail_ + 1) % N;
             }
-            m_buffer_[m_tail_.loadAcquire()] = std::forward<Tp>(value);
+            m_buffer_[m_tail_] = std::forward<Tp>(value);
         }
     };
 

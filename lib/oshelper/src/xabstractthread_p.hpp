@@ -12,12 +12,10 @@ public:
 
     using CallablePtr = XCallableHelper::CallablePtr;
 
-    inline static XAtomicInteger<std::size_t> m_th_cnt{};
-
-    XAtomicInt m_id{-1};
-    XAtomicPointer<void> m_threadID{};
-    XAtomicBool m_finished{true}
-        ,m_running{},m_detached{};
+    static volatile inline uint32_t m_th_cnt{};
+    volatile int m_id {-1};
+    void * volatile m_threadID {};
+    volatile bool m_finished {}, m_running {},m_detached {};
 
     Mutex m_mtx{};
     ConditionVariableAny m_cv{};
