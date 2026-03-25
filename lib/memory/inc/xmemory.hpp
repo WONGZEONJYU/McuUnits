@@ -9,7 +9,6 @@
 
 #if defined(FREERTOS) || defined(USE_FREERTOS)
 #include <FreeRTOS.h>
-#include <atomic.h>
 #endif
 
 inline namespace mem {
@@ -93,7 +92,7 @@ inline namespace mem {
         constexpr ~XDeleter() = default;
 
         template<typename U> requires std::is_constructible_v<U(*)[],Tp_(*)[]>
-        constexpr XDeleter(XDeleter<U[]> const & o) noexcept
+        constexpr X_IMPLICIT XDeleter(XDeleter<U[]> const & o) noexcept
         { copy_(o); }
 
         constexpr XDeleter(XDeleter const & o) noexcept
