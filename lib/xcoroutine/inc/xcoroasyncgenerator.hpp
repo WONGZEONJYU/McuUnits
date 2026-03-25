@@ -4,7 +4,6 @@
 #include <xclasshelpermacros.hpp>
 #define X_COROUTINE_
 #include <private/mixns.hpp>
-#include "private/mixns.hpp"
 #undef X_COROUTINE_
 
 #include <coroutine>

@@ -3,11 +3,11 @@
 
 Mutex::Mutex()
 #if configSUPPORT_STATIC_ALLOCATION > 0
-    :m_mtxHandle_ { xSemaphoreCreateMutexStatic(&m_semaphore_) }
+    :m_mtxHandle_ { xSemaphoreCreateMutexStatic(std::addressof(m_semaphore_)) }
 #else
     m_mtxHandle_ { xSemaphoreCreateMutex() }
 #endif
-{}
+{   }
 
 Mutex::~Mutex()
 { vSemaphoreDelete(m_mtxHandle_); }

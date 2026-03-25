@@ -3,13 +3,12 @@
 
 #include <xclasshelpermacros.hpp>
 #include <mutex>
-#include <xatomic.hpp>
 
 #if defined(FREERTOS) || defined(USE_FREERTOS)
 
 class TaskCriticalArea final {
     W_DISABLE_COPY(TaskCriticalArea)
-    mutable XAtomicInteger<int_fast32_t> m_count_{};
+    mutable volatile uint32_t m_count_{};
 
 public:
     explicit TaskCriticalArea() noexcept;
@@ -21,12 +20,12 @@ public:
     void exit() const noexcept;
 
 private:
-    void swap(TaskCriticalArea const & ) const noexcept;
+    void swap(const TaskCriticalArea & ) const noexcept;
 };
 
 class ISRCriticalArea final {
     W_DISABLE_COPY_MOVE(ISRCriticalArea)
-    XAtomicInteger<uint32_t> m_save_{};
+    volatile uint32_t m_save_{};
 public:
     ISRCriticalArea() noexcept;
     ~ISRCriticalArea();

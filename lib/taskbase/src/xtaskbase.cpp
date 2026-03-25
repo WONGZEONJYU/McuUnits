@@ -4,17 +4,17 @@ void XTaskBase::stop_() noexcept
 { exit(); }
 
 void XTaskBase::exit_() noexcept
-{ m_isRunning_.storeRelease({}); }
+{ m_isRunning_ = {}; }
 
 void XTaskBase::start(std::size_t const stack_depth) noexcept {
     if (!m_th_.threadHandle())
     { m_th_ = XThreadDynamic(&XTaskBase::run,this); }
-    m_isRunning_.storeRelease(true);
+    m_isRunning_ = true;
     m_th_.start(stack_depth);
 }
 
 bool XTaskBase::isRunning() const noexcept
-{ return m_isRunning_.loadRelaxed(); }
+{ return m_isRunning_; }
 
 void XTaskBase::stop() noexcept
 { stop_(); }

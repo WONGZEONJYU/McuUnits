@@ -8,7 +8,7 @@ BinarySemaphore::BinarySemaphore()
 #else
 :m_semaphoreHandle_ { xSemaphoreCreateBinary() }
 #endif
-{}
+{   }
 
 BinarySemaphore::~BinarySemaphore()
 { vSemaphoreDelete(m_semaphoreHandle_); }

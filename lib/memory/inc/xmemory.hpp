@@ -6,10 +6,10 @@
 #include <memory>
 #include <xtypetraits.hpp>
 #include <xutility.hpp>
-#include <xatomic.hpp>
 
 #if defined(FREERTOS) || defined(USE_FREERTOS)
 #include <FreeRTOS.h>
+#include <atomic.h>
 #endif
 
 inline namespace mem {
@@ -21,7 +21,7 @@ inline namespace mem {
         constexpr XAllocator() = default;
 
         template<typename Other>
-        constexpr XAllocator(XAllocator<Other> const &) {}
+        constexpr X_IMPLICIT XAllocator(XAllocator<Other> const &) {}
 
 #if (defined(FREERTOS) || defined(USE_FREERTOS)) && defined(configSUPPORT_DYNAMIC_ALLOCATION)
     #if configSUPPORT_DYNAMIC_ALLOCATION > 0
@@ -56,7 +56,7 @@ inline namespace mem {
         constexpr ~XDeleter() = default;
 
         template<typename U> requires std::is_convertible_v<U * ,Tp_ *>
-        constexpr XDeleter(XDeleter<U> const &) {}
+        constexpr X_IMPLICIT XDeleter(XDeleter<U> const &) {}
 
         static constexpr void cleanup(value_type * const pointer) noexcept {
             static_assert(sizeof(value_type) > static_cast<std::size_t>(0)
@@ -76,13 +76,13 @@ inline namespace mem {
 
     template<typename Tp_> struct XDeleter<Tp_[]> {
     private:
-        mutable XAtomicInteger<std::size_t> m_length {};
+        mutable volatile uint32_t m_length {};
 
         template<typename > friend struct XDeleter;
 
         template<typename U>
         constexpr void copy_(U const & o) noexcept
-        { m_length.storeRelease(o.m_length.loadAcquire()); }
+        { m_length = o.m_length; }
 
     public:
         using type = Tp_;
@@ -106,8 +106,8 @@ inline namespace mem {
         constexpr XDeleter &operator=(XDeleter const & o) noexcept
         { copy_(o);return *this; }
 
-        constexpr void setLength(std::size_t const length) const noexcept
-        { m_length.storeRelease(length); }
+        constexpr void setLength(uint32_t const length) const noexcept
+        { m_length = length; }
 
         static constexpr void cleanup(void * const pointer) noexcept {
             static_assert(!std::is_void_v<value_type>
@@ -130,7 +130,7 @@ inline namespace mem {
             if constexpr (std::is_array_v<Up_>) {
                 std::ranges::destroy_at(pointer);
             }else {
-                std::ranges::destroy_n(pointer,m_length.loadAcquire());
+                std::ranges::destroy_n(pointer,m_length);
             }
             cleanup(pointer);
         }
@@ -402,7 +402,7 @@ inline namespace mem {
             constexpr Destructor_() = default;
 
             template<typename U> requires std::is_convertible_v<U*,value_type*>
-            constexpr Destructor_(Destructor_<U> const &) {}
+            constexpr X_IMPLICIT Destructor_(Destructor_<U> const &) {}
 
             static constexpr void cleanup(value_type * const pointer) noexcept {
                 static_assert(sizeof(Object_t) > static_cast<std::size_t>(0)

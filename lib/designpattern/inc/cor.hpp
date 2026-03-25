@@ -2,8 +2,6 @@
 #define X_COR_HPP 1
 
 #include <xclasshelpermacros.hpp>
-#include <xhelper.hpp>
-#include <xatomic.hpp>
 #include <tuple>
 
 enum class NonConst{};
@@ -17,30 +15,30 @@ template<typename,typename> class XCOR;
 template<typename Args>
 class XCORAbstract {
     W_DISABLE_COPY(XCORAbstract)
-    mutable XAtomicPointer<XCORAbstract> m_next_{};
+    mutable XCORAbstract * volatile m_next_{};
     static_assert(is_tuple_v<Args>,"Args must be XCORArgs<...>!");
 
 public:
     using Arguments = Args;
 
     constexpr void setNextResponse(XCORAbstract * const next) const noexcept
-    { m_next_.storeRelease(next); }
+    { m_next_ = next; }
 
     [[nodiscard]] constexpr bool NextResponseExist() const noexcept
-    { return m_next_.loadAcquire(); }
+    { return m_next_; }
 
-    [[nodiscard]] constexpr operator bool() const noexcept
-    { return m_next_.loadAcquire(); }
+    [[nodiscard]] constexpr X_IMPLICIT operator bool() const noexcept
+    { return m_next_; }
 
     virtual void request(Arguments && args) const {
-        if (auto const next { dynamic_cast<XCOR<Const,Arguments> * >(m_next_.loadAcquire()) })
+        if (auto const next { dynamic_cast<XCOR<Const,Arguments> * >(m_next_) })
         { next->responseHandler(std::forward<decltype(args)>(args)); return ; }
-        if (auto const next { dynamic_cast<XCOR<NonConst,Arguments> * >(m_next_.loadAcquire()) })
+        if (auto const next { dynamic_cast<XCOR<NonConst,Arguments> * >(m_next_) })
         { next->responseHandler(std::forward<decltype(args)>(args)); }
     }
 
     constexpr virtual ~XCORAbstract()
-    { m_next_.storeRelease({}); }
+    { m_next_ = {}; }
 
     constexpr XCORAbstract(XCORAbstract && o) noexcept
     { swap(o); }
@@ -52,9 +50,9 @@ private:
     constexpr XCORAbstract() = default;
 
     constexpr void swap(XCORAbstract const & o) const noexcept {
-        auto const self { m_next_.loadAcquire() };
-        m_next_.storeRelease(o.m_next_.loadAcquire());
-        o.m_next_.storeRelease(self);
+        auto const self { m_next_ };
+        m_next_ = o.m_next_;
+        o.m_next_ = self;
     }
 
     template<typename,typename> friend class XCOR;
