@@ -15,7 +15,7 @@ public:
     static volatile inline uint32_t m_th_cnt{};
     volatile int m_id {-1};
     void * volatile m_threadID {};
-    volatile bool m_finished {}, m_running {},m_detached {};
+    volatile bool m_finished {true}, m_running {},m_detached {};
 
     Mutex m_mtx{};
     ConditionVariableAny m_cv{};
