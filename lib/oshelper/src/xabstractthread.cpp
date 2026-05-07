@@ -1,4 +1,4 @@
-#include <xabstractthread_p.hpp>
+#include "xabstractthread_p.hpp"
 #include <criticalarea.hpp>
 #include <xcontainer.hpp>
 

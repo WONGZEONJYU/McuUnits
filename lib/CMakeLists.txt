@@ -1,3 +1,4 @@
+#[[
 add_subdirectory(xglobal)
 add_subdirectory(tools)
 add_subdirectory(xtuplehelper)
@@ -17,3 +18,4 @@ add_subdirectory(button)
 add_subdirectory(xcallable)
 add_subdirectory(oshelper)
 add_subdirectory(taskbase)
+]]
