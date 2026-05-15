@@ -5,6 +5,8 @@
 #include <conditionvariable.hpp>
 #include <mutex.hpp>
 
+#if defined(FREERTOS) || defined(USE_FREERTOS)
+
 class XAbstractThreadPrivate final : public XAbstractThreadData {
 
 public:
@@ -31,5 +33,7 @@ public:
     void finished() noexcept;
     void setPriority(uint32_t) const noexcept;
 };
+
+#endif
 
 #endif

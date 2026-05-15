@@ -3,6 +3,8 @@
 
 #include <xthread.hpp>
 
+#if defined(FREERTOS) || defined(USE_FREERTOS)
+
 class XTaskBase {
 
     W_DISABLE_COPY_MOVE(XTaskBase)
@@ -25,5 +27,7 @@ private:
     void stop_() noexcept;
     void exit_() noexcept;
 };
+
+#endif
 
 #endif
