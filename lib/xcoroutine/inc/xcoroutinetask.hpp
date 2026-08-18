@@ -8,14 +8,14 @@
 #include <private/xcorotaskabstract.hpp>
 #undef X_COROUTINE_
 
-namespace CORO
-{
+namespace Coro {
+
     template<typename T = void>
     class XCoroTask final :
         public detail::XCoroTaskAbstract<T,XCoroTask, detail::TaskPromise<T>>
     {
         using Base = detail::XCoroTaskAbstract<T, XCoroTask, detail::TaskPromise<T>>;
-        using coroutine_handle = Base::coroutine_handle;
+        using coroutine_handle_ = Base::coroutine_handle_;
 
     public:
         using value_type = T;
@@ -23,25 +23,28 @@ namespace CORO
 
         constexpr XCoroTask() noexcept = default;
 
-        X_IMPLICIT constexpr XCoroTask(coroutine_handle const coroutine) noexcept
+        X_IMPLICIT constexpr XCoroTask(coroutine_handle_ const coroutine) noexcept
             : Base { coroutine }
         {    }
 
         X_IMPLICIT constexpr XCoroTask(promise_type & promise) noexcept
-            : XCoroTask { coroutine_handle::from_promise(promise) }
+            : XCoroTask { coroutine_handle_::from_promise(promise) }
         {    }
 
         X_IMPLICIT constexpr XCoroTask(promise_type * const promise) noexcept
             : XCoroTask { *promise }
         {    }
+
+        W_DISABLE_COPY(XCoroTask)
+        W_DEFAULT_MOVE(XCoroTask)
     };
 
     using XCoroTaskVoid = XCoroTask<>;
 
     namespace detail {
 
-        constexpr XCoroTaskVoid TaskPromiseVoid::get_return_object() noexcept
-        { return this; }
+        inline XCoroTaskVoid TaskPromiseVoid::get_return_object() noexcept
+        { return std::coroutine_handle<TaskPromise>::from_promise(*this); }
 
         template <typename T>
         concept TaskConvertible = requires(T val, TaskPromiseAbstract promise)
@@ -68,4 +71,5 @@ namespace CORO
     }
 
 }
+
 #endif

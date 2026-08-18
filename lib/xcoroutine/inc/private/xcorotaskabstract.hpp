@@ -11,8 +11,13 @@
 #include <private/taskawaiterabstract.hpp>
 #include <cassert>
 #include <optional>
+#include <functional>
+#include <utility>
 
-namespace CORO::detail {
+namespace Coro
+{ template<typename T> class XCoroTask; }
+
+namespace Coro::detail {
 
     template<typename T>
     struct is_task : std::false_type { using return_type = T; };
@@ -29,27 +34,19 @@ namespace CORO::detail {
 
     template<typename T, template<typename> class TaskImpl, typename PromiseType>
     class XCoroTaskAbstract {
-        static auto constexpr ErrCallBack { []<typename Tp>(Tp && ) noexcept { std::terminate(); } };
     protected:
-        using coroutine_handle = std::coroutine_handle<PromiseType>;
-        coroutine_handle m_coroutine_ {};
+        using coroutine_handle_ = std::coroutine_handle<PromiseType>;
+        coroutine_handle_ m_coroutine_ {};
 
     public:
-        constexpr XCoroTaskAbstract(XCoroTaskAbstract && o) noexcept
-            : m_coroutine_ { o.m_coroutine_ }
-        { o.m_coroutine_ = {}; }
+        W_DISABLE_COPY(XCoroTaskAbstract)
 
-        constexpr XCoroTaskAbstract & operator=(XCoroTaskAbstract && o) noexcept {
-#if 0
-            // if (this == std::addressof(o)) { return *this; }
-            // if (m_coroutine_) { m_coroutine_.promise().derefCoroutine(); }
-            // m_coroutine_ = o.m_coroutine_;
-            // o.m_coroutine_ = {};
-#else
-            XCoroTaskAbstract { std::move(o) }.swap(*this);
-            return *this;
-#endif
-        }
+        constexpr XCoroTaskAbstract(XCoroTaskAbstract && o) noexcept
+            : m_coroutine_ { std::exchange(o.m_coroutine_,{}) }
+        {   }
+
+        constexpr XCoroTaskAbstract & operator=(XCoroTaskAbstract && o) noexcept
+        { XCoroTaskAbstract { std::move(o) }.swap(*this); return *this; }
 
         virtual ~XCoroTaskAbstract()
         { if (m_coroutine_) { m_coroutine_.promise().derefCoroutine(); } }
@@ -63,18 +60,40 @@ namespace CORO::detail {
         { std::swap(m_coroutine_, o.m_coroutine_); }
 
         template<typename ThenCallback> requires (
-            std::is_invocable_v<ThenCallback>
-            || (!std::is_void_v<T> && std::is_invocable_v<ThenCallback, T>)
+            std::is_invocable_v<ThenCallback> || (!std::is_void_v<T> && std::is_invocable_v<ThenCallback, T>)
         )
         constexpr auto then(ThenCallback && callback) &
-        { return thenImplRef(*this, std::forward<ThenCallback>(callback),ErrCallBack); }
+        { return thenImplRef(*this, std::forward<ThenCallback>(callback),[](auto const & ){ throw; }); }
 
         template<typename ThenCallback> requires (
-            std::is_invocable_v<ThenCallback>
-            || (!std::is_void_v<T> && std::is_invocable_v<ThenCallback, T>)
+            std::is_invocable_v<ThenCallback> || (!std::is_void_v<T> && std::is_invocable_v<ThenCallback, T>)
+        )
+        constexpr auto operator >>(ThenCallback && callback) &
+        { return thenImplRef(*this, std::forward<ThenCallback>(callback),[](auto const & ){ throw; }); }
+
+        template<typename ThenCallback> requires (
+            std::is_invocable_v<ThenCallback> || (!std::is_void_v<T> && std::is_invocable_v<ThenCallback, T>)
+        )
+        constexpr auto operator |(ThenCallback && callback) &
+        { return thenImplRef(*this, std::forward<ThenCallback>(callback),[](auto const & ){ throw; }); }
+
+        template<typename ThenCallback> requires (
+            std::is_invocable_v<ThenCallback> || (!std::is_void_v<T> && std::is_invocable_v<ThenCallback, T>)
         )
         constexpr auto then(ThenCallback && callback) &&
-        { return thenImpl(std::move(*this), std::forward<ThenCallback>(callback), ErrCallBack); }
+        { return thenImpl(std::move(*this), std::forward<ThenCallback>(callback), [](auto const & ){ throw; }); }
+
+        template<typename ThenCallback> requires (
+            std::is_invocable_v<ThenCallback> || (!std::is_void_v<T> && std::is_invocable_v<ThenCallback, T>)
+        )
+        constexpr auto operator >>(ThenCallback && callback) &&
+        { return thenImpl(std::move(*this), std::forward<ThenCallback>(callback), [](auto const & ){ throw; }); }
+
+        template<typename ThenCallback> requires (
+            std::is_invocable_v<ThenCallback> || (!std::is_void_v<T> && std::is_invocable_v<ThenCallback, T>)
+        )
+        constexpr auto operator |(ThenCallback && callback) &&
+        { return thenImpl(std::move(*this), std::forward<ThenCallback>(callback), [](auto const & ){ throw; }); }
 
         template<typename ThenCallback, typename ErrorCallback> requires (
             ( std::is_invocable_v<ThenCallback> || (!std::is_void_v<T> && std::is_invocable_v<ThenCallback, T>) )
@@ -102,7 +121,10 @@ namespace CORO::detail {
 
         template<typename R, typename ErrorCallback , typename U = is_task_rt<R>>
         static constexpr U handleException(ErrorCallback && errCb, std::exception const & exception)
-        { std::invoke(std::forward<ErrorCallback>(errCb),exception); if constexpr (std::is_void_v<U>) { return ; } else { return U{}; } }
+        {
+            std::invoke(std::forward<ErrorCallback>(errCb),exception);
+            if constexpr (std::is_void_v<U>) { return; } else { return U{}; }
+        }
 
         template<typename ThenCallback, typename ...Arg>
         struct cb_invoke_result : std::conditional_t<
@@ -123,17 +145,15 @@ namespace CORO::detail {
             -> std::conditional_t< is_task_v<R>, R, TaskImpl<R> >;
 
         template<typename TaskT, typename ThenCallback, typename ErrorCallback, typename R = cb_invoke_result_t<ThenCallback, T>>
-        static auto thenImplRef(TaskT const &, ThenCallback && , ErrorCallback && )
+        static auto thenImplRef(TaskT &, ThenCallback && , ErrorCallback && )
             -> std::conditional_t<is_task_v<R>, R, TaskImpl<R>>;
 
     protected:
         constexpr XCoroTaskAbstract() noexcept = default;
 
-        X_IMPLICIT constexpr XCoroTaskAbstract(coroutine_handle const h) noexcept
+        X_IMPLICIT constexpr XCoroTaskAbstract(coroutine_handle_ const h) noexcept
             : m_coroutine_ { h }
         { m_coroutine_.promise().refCoroutine(); }
-
-        W_DISABLE_COPY(XCoroTaskAbstract)
     };
 
 #undef XCoroTaskAbstractClassTemplate
@@ -146,7 +166,7 @@ namespace CORO::detail {
 
         struct TaskAwaiter final : TaskAwaiterAbstract<PromiseType> {
 
-            X_IMPLICIT constexpr TaskAwaiter(coroutine_handle const h)
+            X_IMPLICIT constexpr TaskAwaiter(coroutine_handle_ const h)
                 : TaskAwaiterAbstract<PromiseType> { h }
             {    }
 
@@ -165,7 +185,7 @@ namespace CORO::detail {
 
     XCoroTaskAbstractClassTemplate
     template<typename TaskT, typename ThenCallback, typename ErrorCallback, typename R >
-    auto XCoroTaskAbstractClass thenImpl(TaskT const task, ThenCallback && thenCallback, ErrorCallback && errorCallback)
+    auto XCoroTaskAbstractClass thenImpl(TaskT task, ThenCallback && thenCallback, ErrorCallback && errorCallback)
         -> std::conditional_t< is_task_v<R>, R, TaskImpl<R> >
     {
         auto thenCb { std::forward<ThenCallback>(thenCallback) };
@@ -194,7 +214,7 @@ namespace CORO::detail {
 
     XCoroTaskAbstractClassTemplate
     template<typename TaskT, typename ThenCallback, typename ErrorCallback, typename R>
-    auto XCoroTaskAbstractClass thenImplRef(TaskT const & task, ThenCallback && thenCallback, ErrorCallback && errorCallback)
+    auto XCoroTaskAbstractClass thenImplRef(TaskT & task, ThenCallback && thenCallback, ErrorCallback && errorCallback)
         -> std::conditional_t<is_task_v<R>, R, TaskImpl<R>>
     {
         auto thenCb { std::forward<ThenCallback>(thenCallback) };

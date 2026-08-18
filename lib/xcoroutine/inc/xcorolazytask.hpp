@@ -7,7 +7,7 @@
 #include <iostream>
 #include <cassert>
 
-namespace CORO {
+namespace Coro {
 
     template<typename T> class XCoroLazyTask;
 
@@ -22,8 +22,8 @@ namespace CORO {
 
             using TaskPromise<T>::TaskPromise;
 
-            constexpr XCoroLazyTask<T> get_return_object() noexcept
-            { return { this }; }
+            XCoroLazyTask<T> get_return_object() noexcept
+            { return std::coroutine_handle<LazyTaskPromise>::from_promise(*this); }
 
             static constexpr auto initial_suspend() noexcept
             { return std::suspend_always {}; }
@@ -36,30 +36,27 @@ namespace CORO {
         : public detail::XCoroTaskAbstract<T, XCoroLazyTask, detail::LazyTaskPromise<T>>
     {
         using Base = detail::XCoroTaskAbstract<T, XCoroLazyTask, detail::LazyTaskPromise<T>>;
-        using coroutine_handle = Base::coroutine_handle;
+        using coroutine_handle_ = Base::coroutine_handle_;
 
     public:
         using promise_type = detail::LazyTaskPromise<T>;
         using value_type = T;
 
-#if 0
         ~XCoroLazyTask() override {
-#ifndef NDEBUG
+    #ifndef NDEBUG
             if (this->m_coroutine_ && !this->m_coroutine_.done())
-            { std::cerr << "XCoroLazyTask destroyed before it was awaited!"; }
-#endif
+            { assert("XCoroLazyTask destroyed before it was awaited!"); }
+    #endif
         }
-#else
-        constexpr ~XCoroLazyTask() override = default;
-#endif
 
         constexpr auto operator co_await() const noexcept {
 
-            struct TaskAwaiter : detail::TaskAwaiterAbstract<promise_type> {
+            class TaskAwaiter final : public detail::TaskAwaiterAbstract<promise_type> {
                 using Base = detail::TaskAwaiterAbstract<promise_type>;
-
-                X_IMPLICIT constexpr TaskAwaiter(Base::coroutine_handle const h) noexcept
-                    : Base { h } {  }
+            public:
+                X_IMPLICIT constexpr TaskAwaiter(Base::coroutine_handle_ const h) noexcept
+                    : Base { h }
+                {   }
 
                 constexpr auto await_suspend(std::coroutine_handle<> const h) noexcept{
                     Base::await_suspend(h);
@@ -79,18 +76,24 @@ namespace CORO {
 
         constexpr XCoroLazyTask() noexcept = default;
 
-        X_IMPLICIT constexpr XCoroLazyTask(coroutine_handle const h) noexcept
+        X_IMPLICIT constexpr XCoroLazyTask(coroutine_handle_ const h) noexcept
             : Base { h }
         {   }
 
         X_IMPLICIT constexpr XCoroLazyTask(promise_type & promise) noexcept
-            : XCoroLazyTask { coroutine_handle::from_promise(promise) }
+            : XCoroLazyTask { coroutine_handle_::from_promise(promise) }
         {   }
 
         X_IMPLICIT constexpr XCoroLazyTask(promise_type * const promise) noexcept
             : XCoroLazyTask { *promise }
         {   }
+
+        W_DISABLE_COPY(XCoroLazyTask)
+        W_DEFAULT_MOVE(XCoroLazyTask)
     };
+
+    using XCoroLazyTaskVoid = XCoroLazyTask<>;
+
 }
 
 #endif

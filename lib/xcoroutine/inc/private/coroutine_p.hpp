@@ -10,7 +10,7 @@
 #include <utility>
 #include <coroutine>
 
-namespace CORO {
+namespace Coro {
 
     namespace detail {
 
@@ -30,21 +30,20 @@ namespace CORO {
         template<typename T>
         concept has_nonmember_operator_coawait = requires(T t) {
             // TODO: Check that result of the operator satisfied Awaitable again
-    #if defined(_MSC_VER) && !defined(__clang__)
+#if defined(_MSC_VER) && !defined(__clang__)
             // FIXME: MSVC is unable to perform ADL lookup for operator co_await and just fails to compile
             { ::operator co_await(static_cast<T &&>(t)) };
-    #else
+#else
             { operator co_await(static_cast<T &&>(t)) };
-    #endif
+#endif
         };
 
     }
 
-template<typename T>
-concept Awaitable = detail::has_member_operator_coawait<T>
-                    || detail::has_nonmember_operator_coawait<T>
-                    || detail::has_await_methods<T>;
-
+    template<typename T>
+    concept Awaitable = detail::has_member_operator_coawait<T>
+                        || detail::has_nonmember_operator_coawait<T>
+                        || detail::has_await_methods<T>;
 }
 
 #endif
