@@ -9,7 +9,7 @@
 
 #include <concepts>
 
-namespace concepts {
+namespace Coro::concepts {
     template<typename T>
     concept destructible = std::is_nothrow_destructible_v<T>;
 

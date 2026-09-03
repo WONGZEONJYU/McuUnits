@@ -11,27 +11,27 @@
 #include <private/mixns.hpp>
 #include <coroutine>
 #include <vector>
+#include <xatomic.hpp>
 
-namespace CORO::detail{
+namespace Coro::detail {
 
-    using coroutine_handle_vector = std::vector<std::coroutine_handle<>>;
+    using coroutine_handle_container = std::vector<std::coroutine_handle<>>;
 
     class TaskFinalSuspend final {
-        coroutine_handle_vector m_awaitingCoroutines_ {};
+        coroutine_handle_container m_awaitingCoroutines_ {};
     public:
-        X_IMPLICIT constexpr TaskFinalSuspend(coroutine_handle_vector && awaitingCoroutines)
+        X_IMPLICIT TaskFinalSuspend(coroutine_handle_container && awaitingCoroutines)
             : m_awaitingCoroutines_ { std::move(awaitingCoroutines) }
         {   }
 
-        static constexpr bool await_ready() noexcept
-        { return {}; }
+        static constexpr bool await_ready() noexcept { return {}; }
 
         template<typename Promise>
         void await_suspend(std::coroutine_handle<Promise> const h) noexcept {
             auto && promise{ h.promise() };
             for (auto && awaiter : m_awaitingCoroutines_)
             { awaiter.resume(); }
-            m_awaitingCoroutines_.clear();
+            m_awaitingCoroutines_ = coroutine_handle_container{};
             promise.derefCoroutine();
         }
 
@@ -40,37 +40,35 @@ namespace CORO::detail{
 
     class TaskPromiseAbstract : public AwaitTransformMixin {
         friend class TaskFinalSuspend;
-        coroutine_handle_vector m_awaitingCoroutines_ {};
-        volatile uint32_t m_ref_ {1};
+        coroutine_handle_container m_awaitingCoroutines_ {};
+        XAtomicInt m_ref_ {1};
 
     public:
         static constexpr auto initial_suspend() noexcept
         { return std::suspend_never {}; }
 
-        constexpr auto final_suspend() noexcept
-        { return TaskFinalSuspend {std::move(m_awaitingCoroutines_) }; }
+        TaskFinalSuspend final_suspend() noexcept
+        { return std::move(m_awaitingCoroutines_); }
 
-        constexpr void addAwaitingCoroutine(std::coroutine_handle<> const awaitingCoroutine) noexcept
+        void addAwaitingCoroutine(std::coroutine_handle<> const awaitingCoroutine)
         { m_awaitingCoroutines_.push_back(awaitingCoroutine); }
 
-        [[nodiscard]] constexpr bool hasAwaitingCoroutine() const noexcept
+        [[nodiscard]] bool hasAwaitingCoroutine() const noexcept
         { return !m_awaitingCoroutines_.empty(); }
 
-        void derefCoroutine() noexcept {
-            if (1 == m_ref_) { destroyCoroutine(); }
-            m_ref_ -= 1;
-        }
+        void derefCoroutine()
+        { if (!m_ref_.deref()) { destroyCoroutine(); } }
 
         void refCoroutine() noexcept
-        { m_ref_ += 1; }
+        { m_ref_.ref(); }
 
-        void destroyCoroutine() noexcept{
-            m_ref_ = {};
+        void destroyCoroutine() {
+            m_ref_.storeRelaxed({});
             auto const handle { std::coroutine_handle<TaskPromiseAbstract>::from_promise(*this) };
             handle.destroy();
         }
 
-        constexpr virtual ~TaskPromiseAbstract() noexcept = default;
+        virtual ~TaskPromiseAbstract() = default;
 
     protected:
         constexpr TaskPromiseAbstract() noexcept = default;

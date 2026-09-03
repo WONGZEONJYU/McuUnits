@@ -1,4 +1,4 @@
-#[[
+
 # 创建Unit静态库
 set(LIBName Units)
 
@@ -19,8 +19,8 @@ file(GLOB_RECURSE UNIT_HEADERS
 add_library(${LIBName} STATIC ${UNIT_SOURCES} ${UNIT_HEADERS})
 
 # 自动发现所有子目录并设置为包含路径
-file(GLOB UNIT_SUBDIRS LIST_DIRECTORIES true ${CMAKE_CURRENT_SOURCE_DIR}/*/include)
-message(STATUS ${UNIT_SUBDIRS})
+file(GLOB UNIT_SUBDIRS LIST_DIRECTORIES true ${CMAKE_CURRENT_SOURCE_DIR}/lib/*/inc)
+message(STATUS "UNIT_SUBDIRS = ${UNIT_SUBDIRS}")
 set(UNIT_INCLUDE_DIRS "")
 foreach(subdir ${UNIT_SUBDIRS})
     if(IS_DIRECTORY ${subdir})
@@ -85,7 +85,8 @@ target_compile_options(${LIBName} PUBLIC
 )
 
 unset(LIBName)
-]]
 
+#[[
 include(cmake/CreateModule.cmake)
 add_subdirectory(lib)
+]]

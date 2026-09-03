@@ -1,5 +1,7 @@
 #include <xtaskbase.hpp>
 
+#if defined(FREERTOS) || defined(USE_FREERTOS)
+
 void XTaskBase::stop_() noexcept
 { exit(); }
 
@@ -27,3 +29,5 @@ void XTaskBase::setPriority(uint32_t const p) const noexcept
 
 XTaskBase::~XTaskBase()
 { stop_(); m_th_.wait();}
+
+#endif

@@ -10,7 +10,7 @@
 #include <iterator>
 #include <exception>
 
-namespace CORO {
+namespace Coro {
 
     template<typename T> struct XAsyncGenerator;
 
@@ -50,7 +50,7 @@ namespace CORO {
             void rethrow_if_unhandled_exception() const
             { if (m_exception_) { std::rethrow_exception(m_exception_); } }
 
-            constexpr virtual ~XAsyncGeneratorPromiseAbstract() = default;
+            virtual ~XAsyncGeneratorPromiseAbstract() = default;
 
             W_DISABLE_COPY(XAsyncGeneratorPromiseAbstract)
             W_DEFAULT_MOVE(XAsyncGeneratorPromiseAbstract)
@@ -213,14 +213,14 @@ namespace CORO {
         using iterator = XAsyncGeneratorIterator<T>;
 
     private:
-        using coroutine_handle = std::coroutine_handle<promise_type>;
-        coroutine_handle m_coroutine_ { };
+        using coroutine_handle_ = std::coroutine_handle<promise_type>;
+        coroutine_handle_ m_coroutine_ { };
 
     public:
         constexpr XAsyncGenerator() noexcept = default;
 
         X_IMPLICIT constexpr XAsyncGenerator(promise_type & promise) noexcept
-            : m_coroutine_ { coroutine_handle::from_promise(promise) }
+            : m_coroutine_ { coroutine_handle_::from_promise(promise) }
         {   }
 
         X_IMPLICIT constexpr XAsyncGenerator(promise_type * const promise) noexcept
@@ -239,15 +239,13 @@ namespace CORO {
 
         constexpr auto begin() const noexcept {
 
-            class BeginIteratorAwaitable final
-                : public detail::XIteratorAwaitableAbstract
+            struct BeginIteratorAwaitable final
+                : detail::XIteratorAwaitableAbstract
             {
-                using Base = XIteratorAwaitableAbstract;
-            public:
                 constexpr BeginIteratorAwaitable() noexcept = default;
 
-                X_IMPLICIT constexpr BeginIteratorAwaitable(coroutine_handle const h) noexcept
-                    : Base { h.promise(), h }
+                X_IMPLICIT constexpr BeginIteratorAwaitable(coroutine_handle_ const h) noexcept
+                    : XIteratorAwaitableAbstract { h.promise(), h }
                 {   }
 
                 [[nodiscard]] constexpr bool await_ready() const noexcept
@@ -256,7 +254,7 @@ namespace CORO {
                 constexpr iterator await_resume() const {
                     if (!m_promise_) { return { }; }
                     if (m_promise_->finished()) { m_promise_->rethrow_if_unhandled_exception(); return { }; }
-                    return { coroutine_handle::from_promise(*static_cast<promise_type *>(m_promise_)) };
+                    return { coroutine_handle_::from_promise(*static_cast<promise_type *>(m_promise_)) };
                 }
             };
 
@@ -275,10 +273,11 @@ namespace CORO {
     constexpr void swap(XAsyncGenerator<T> & arg1, XAsyncGenerator<T> & arg2) noexcept
     { arg1.swap(arg2); }
 
+}
+
 #define X_CORO_FOREACH(var, generator) \
     if (auto && _container_ { (generator) }; false) {} else \
     for (auto _begin_ { co_await _container_.begin() }, _end_ { _container_.end() }; _begin_ != _end_; co_await ++_begin_) \
     if (var = *_begin_; false) {} else // NOLINT(bugprone-macro-parentheses)
-}
 
 #endif

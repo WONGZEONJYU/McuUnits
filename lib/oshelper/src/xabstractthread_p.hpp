@@ -5,6 +5,8 @@
 #include <conditionvariable.hpp>
 #include <mutex.hpp>
 
+#if defined(FREERTOS) || defined(USE_FREERTOS)
+
 class XAbstractThreadPrivate final : public XAbstractThreadData {
 
 public:
@@ -15,7 +17,7 @@ public:
     static volatile inline uint32_t m_th_cnt{};
     volatile int m_id {-1};
     void * volatile m_threadID {};
-    volatile bool m_finished {}, m_running {},m_detached {};
+    volatile bool m_finished {true}, m_running {},m_detached {};
 
     Mutex m_mtx{};
     ConditionVariableAny m_cv{};
@@ -31,5 +33,7 @@ public:
     void finished() noexcept;
     void setPriority(uint32_t) const noexcept;
 };
+
+#endif
 
 #endif

@@ -10,7 +10,7 @@
 #include <type_traits>
 #include "private/coroutine_p.hpp"
 
-namespace CORO::detail {
+namespace Coro::detail {
 
     template<typename> struct awaiter_type;
 

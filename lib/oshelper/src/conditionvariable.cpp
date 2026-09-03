@@ -24,6 +24,8 @@ void ConditionVariableAny::notify_all(size_t const count) const noexcept {
 
 #else
 
+#if defined(FREERTOS) || defined(USE_FREERTOS)
+
 ConditionVariableAny::ConditionVariableAny() = default;
 
 ConditionVariableAny::~ConditionVariableAny() = default;
@@ -36,5 +38,7 @@ void ConditionVariableAny::notify_all() const noexcept {
     for (std::size_t i {}; i < waiters; ++i)
     { (void)m_semaphore_.releases(); }
 }
+
+#endif
 
 #endif

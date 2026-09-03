@@ -17,8 +17,11 @@ TaskCriticalArea::~TaskCriticalArea() {
     m_count_ = {};
 }
 
-TaskCriticalArea::TaskCriticalArea(TaskCriticalArea && o) noexcept
-{ swap(o); }
+TaskCriticalArea::TaskCriticalArea(TaskCriticalArea && o) noexcept {
+    TaskCriticalArea const obj{};
+    obj.swap(o);
+    swap(obj);
+}
 
 TaskCriticalArea& TaskCriticalArea::operator=(TaskCriticalArea && o) noexcept
 { TaskCriticalArea { std::move(o) }.swap(*this); return *this; }

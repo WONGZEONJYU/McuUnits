@@ -9,7 +9,7 @@
 #include <xclasshelpermacros.hpp>
 #include <coroutine>
 
-namespace CORO::detail {
+namespace Coro::detail {
 
     template<typename Promise>
     struct TaskAwaiterAbstract {

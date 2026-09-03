@@ -1,6 +1,7 @@
 #include <mutex.hpp>
 #include <mutex>
 
+#if defined(FREERTOS) || defined(USE_FREERTOS)
 Mutex::Mutex()
 #if configSUPPORT_STATIC_ALLOCATION > 0
     :m_mtxHandle_ { xSemaphoreCreateMutexStatic(std::addressof(m_semaphore_)) }
@@ -20,3 +21,5 @@ bool Mutex::tryLock(int64_t const wait) const noexcept
 
 void Mutex::unlock() const noexcept
 { xSemaphoreGive(m_mtxHandle_); }
+
+#endif
