@@ -19,7 +19,7 @@ public:
     X_IMPLICIT ElapsedTimer(uint32_t = 1000) noexcept;
     void setTimeOut(uint32_t) noexcept;
     void setTimeOut(std::chrono::milliseconds) noexcept;
-    void reload() noexcept;
+    void restart() noexcept;
     [[nodiscard]] bool timeOut() noexcept;
     X_IMPLICIT operator bool() noexcept;
     ~ElapsedTimer();

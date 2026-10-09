@@ -1,11 +1,11 @@
 #include <abstractgpio.hpp>
 
 AbstractGPIO::AbstractGPIO(void * const port, uint32_t const pin)
-:m_port_(port),m_pin_(pin) {}
+:m_port_{port},m_pin_{pin} {}
 
 void AbstractGPIO::swap(AbstractGPIO & o) noexcept {
-    std::swap(m_port_, o.m_port_);
-    std::swap(m_pin_, o.m_pin_);
+    std::ranges::swap(m_port_, o.m_port_);
+    std::ranges::swap(m_pin_, o.m_pin_);
 }
 
 void AbstractGPIO::copy(AbstractGPIO const & o) noexcept
