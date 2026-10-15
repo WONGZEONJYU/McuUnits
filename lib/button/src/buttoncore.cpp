@@ -10,8 +10,10 @@ void ButtonCorePrivate::removeButton(void * const d) noexcept
 void ButtonCorePrivate::exec() const noexcept
 { for (const auto & v : m_buttons | std::views::values) { v->exec_(); } }
 
-ButtonCore * ButtonCore::handle() noexcept
-{ return UniqueConstruction().get(); }
+ButtonCore * ButtonCore::handle() noexcept {
+    static auto obj { CreateUniquePtr() };
+    return obj.get();
+}
 
 void ButtonCore::exec() noexcept
 { d_func()->exec(); }

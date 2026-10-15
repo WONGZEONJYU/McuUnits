@@ -17,7 +17,7 @@ public:
 
     virtual int64_t write(const void *, std::size_t, int64_t) const = 0;
 
-    virtual void startDMAReceive() {}
+    virtual void startReceive() {}
 
 protected:
     virtual int64_t isrIn(void *, std::size_t) { return 0; }

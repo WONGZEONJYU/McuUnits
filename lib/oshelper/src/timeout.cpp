@@ -6,48 +6,30 @@
 #include <FreeRTOS.h>
 #include <task.h>
 
-class ElapsedTimerPrivate final {
-public:
-    ElapsedTimer * q_ptr{};
-    TimeOut_t m_timeOut{};
-    TickType_t m_waitTime{},m_recordWaitTime{};
-    W_DECLARE_PUBLIC(ElapsedTimer)
-    explicit ElapsedTimerPrivate(ElapsedTimer * const q):q_ptr{ q }
-    {   }
-    ~ElapsedTimerPrivate() = default;
-};
-
 ElapsedTimer::ElapsedTimer(std::chrono::milliseconds const ms) noexcept :
-    m_d_ptr_{ makeUnique<ElapsedTimerPrivate>(this) }
-{
-    assert(m_d_ptr_);
-    setTimeOut(ms);
-    vTaskSetTimeOutState(std::addressof(d_func()->m_timeOut));
-}
+m_waitTime_ { static_cast<TickType_t>(ms.count()) },m_recordWaitTime_{ m_waitTime_ }
+{ vTaskSetTimeOutState(std::addressof(m_timeOut_)); }
 
 ElapsedTimer::ElapsedTimer(uint32_t const ms) noexcept:
     ElapsedTimer { std::chrono::milliseconds{ms} }
 {   }
 
 void ElapsedTimer::setTimeOut(uint32_t const ms) noexcept {
-    W_D(ElapsedTimer);
-    d->m_waitTime = pdMS_TO_TICKS(ms);
-    d->m_recordWaitTime = d->m_waitTime;
+    m_waitTime_ = pdMS_TO_TICKS(ms);
+    m_recordWaitTime_ = m_waitTime_;
 }
 
 void ElapsedTimer::setTimeOut(std::chrono::milliseconds const ms) noexcept
 { setTimeOut(ms.count()); }
 
 void ElapsedTimer::restart() noexcept {
-    vTaskSetTimeOutState(std::addressof(d_func()->m_timeOut));
-    W_D(ElapsedTimer);
-    d->m_waitTime = d->m_recordWaitTime;
+    vTaskSetTimeOutState(std::addressof(m_timeOut_));
+    m_waitTime_ = m_recordWaitTime_;
 }
 
 bool ElapsedTimer::timeOut() noexcept {
-    W_D(ElapsedTimer);
-    return xTaskCheckForTimeOut(std::addressof(d->m_timeOut),
-        std::addressof(d->m_waitTime));
+    return xTaskCheckForTimeOut(std::addressof(m_timeOut_),
+        std::addressof(m_waitTime_));
 }
 
 ElapsedTimer::operator bool() noexcept

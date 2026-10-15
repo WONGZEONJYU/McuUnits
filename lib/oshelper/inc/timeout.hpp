@@ -7,12 +7,9 @@
 
 #if defined(FREERTOS) || defined(USE_FREERTOS)
 
-class ElapsedTimerPrivate;
-
 class ElapsedTimer final {
-
-    W_DECLARE_PRIVATE_D(m_d_ptr_,ElapsedTimer)
-    XUniquePtr<ElapsedTimerPrivate> m_d_ptr_;
+    TimeOut_t m_timeOut_{};
+    TickType_t m_waitTime_{},m_recordWaitTime_{};
 
 public:
     X_IMPLICIT ElapsedTimer(std::chrono::milliseconds) noexcept;

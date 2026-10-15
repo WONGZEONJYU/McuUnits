@@ -196,16 +196,24 @@ namespace Coro::detail {
 #define CATCH_TASK_EXP catch (std::exception const & e) { co_return handleException<R>(errCb, e); }
 
         if constexpr (std::is_void_v<typename TaskImpl<T>::value_type>) {
+
+#if 0
             try { co_await taskImpl; }
             CATCH_TASK_EXP
+#else
+            co_await taskImpl;
+#endif
 
             if constexpr (is_task_v<R>) { co_return co_await invokeCb(thenCb); }
             else { co_return invokeCb(thenCb); }
         } else {
             std::optional<T> value {};
-
+#if 0
             try { value.emplace(std::move(co_await taskImpl)); }
             CATCH_TASK_EXP
+#else
+            value.emplace(std::move(co_await taskImpl));
+#endif
 
             if constexpr (is_task_v<R>) { co_return co_await invokeCb(thenCb , std::move(*value)); }
             else { co_return invokeCb(thenCb , std::move(*value)); }
@@ -222,17 +230,23 @@ namespace Coro::detail {
         auto && taskImpl { static_cast< TaskImpl<T> const & >(task) };
 
         if constexpr (std::is_void_v<typename TaskImpl<T>::value_type>) {
+#if 0
             try { co_await taskImpl; }
             CATCH_TASK_EXP
+#else
+            co_await taskImpl;
+#endif
 
             if constexpr (is_task_v<R>) { co_return co_await invokeCb(thenCb); }
             else { co_return invokeCb(thenCb); }
         } else {
             std::optional<T> value {};
-
+#if 0
             try { value.emplace(std::move(co_await taskImpl)); }
             CATCH_TASK_EXP
-
+#else
+            value.emplace(std::move(co_await taskImpl));
+#endif
             if constexpr (is_task_v<R>) { co_return co_await invokeCb(thenCb , std::move(*value)); }
             else { co_return invokeCb(thenCb , std::move(*value)); }
         }

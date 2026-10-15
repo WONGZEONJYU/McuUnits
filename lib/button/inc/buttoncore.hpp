@@ -15,7 +15,7 @@ public:
     ButtonCore * q_ptr{};
 };
 
-class ButtonCore final : XSingleton<ButtonCore> {
+class ButtonCore final : XTwoPhaseConstruction<ButtonCore> {
     W_DISABLE_COPY_MOVE(ButtonCore)
     W_DECLARE_PRIVATE_D(m_d_ptr_,ButtonCore)
     X_TWO_PHASE_CONSTRUCTION_CLASS

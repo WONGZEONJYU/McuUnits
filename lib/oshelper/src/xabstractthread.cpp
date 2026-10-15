@@ -90,10 +90,10 @@ void XAbstractThreadPrivate::setPriority(uint32_t const prio) const noexcept {
 }
 
 void XAbstractThread::sleep_for(std::size_t const ms) noexcept
-{ vTaskDelay(ms); }
+{ vTaskDelay(pdMS_TO_TICKS(ms)); }
 
 void XAbstractThread::sleep_until(std::size_t & pre,std::size_t const ms) noexcept
-{ vTaskDelayUntil(reinterpret_cast<TickType_t*>(&pre),ms); }
+{ vTaskDelayUntil(reinterpret_cast<TickType_t*>(std::addressof(pre)),pdMS_TO_TICKS(ms)); }
 
 void XAbstractThread::yield() noexcept
 { taskYIELD();}

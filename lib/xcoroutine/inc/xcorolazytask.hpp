@@ -4,7 +4,6 @@
 #pragma once
 
 #include <xcoroutinetask.hpp>
-#include <iostream>
 #include <cassert>
 
 namespace Coro {
@@ -51,15 +50,17 @@ namespace Coro {
 
         constexpr auto operator co_await() const noexcept {
 
-            class TaskAwaiter final : public detail::TaskAwaiterAbstract<promise_type> {
-                using Base = detail::TaskAwaiterAbstract<promise_type>;
+            using TaskAwaiterAbstract = detail::TaskAwaiterAbstract<promise_type>;
+
+            class TaskAwaiter final : public TaskAwaiterAbstract {
+
             public:
-                X_IMPLICIT constexpr TaskAwaiter(Base::coroutine_handle_ const h) noexcept
-                    : Base { h }
+                X_IMPLICIT constexpr TaskAwaiter(TaskAwaiterAbstract::coroutine_handle_ const h) noexcept
+                    : TaskAwaiterAbstract { h }
                 {   }
 
                 constexpr auto await_suspend(std::coroutine_handle<> const h) noexcept{
-                    Base::await_suspend(h);
+                    TaskAwaiterAbstract::await_suspend(h);
                     // Return handle to the lazy task, so that it gets automatically resumed.
                     return this->m_awaitedCoroutine_;
                 }
