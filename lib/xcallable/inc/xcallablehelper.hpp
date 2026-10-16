@@ -6,7 +6,6 @@
 #include <type_traits>
 #include <utility>
 #include <functional>
-#include <memory>
 
 class XCallableHelper {
 

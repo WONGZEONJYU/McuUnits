@@ -26,6 +26,9 @@ namespace Coro {
             constexpr XCoroTask<T> get_return_object() noexcept
             { return std::coroutine_handle<TaskPromise>::from_promise(*this); }
 
+            static XCoroTask<T> get_return_object_on_allocation_failure() noexcept
+            { configASSERT(0); return XCoroTask<T>{}; }
+
             void unhandled_exception()
             { m_value_ = std::current_exception(); }
 
@@ -61,6 +64,8 @@ namespace Coro {
             std::exception_ptr m_exception_ {};
         public:
             XCoroTask<void> get_return_object() noexcept;
+
+            static XCoroTask<void> get_return_object_on_allocation_failure() noexcept;
 
             void unhandled_exception()
             { m_exception_ = std::current_exception(); }

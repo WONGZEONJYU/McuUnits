@@ -1,6 +1,7 @@
 #ifndef XUTILS2_TASK_PROMISE_ABSTRACT_HPP
 #define XUTILS2_TASK_PROMISE_ABSTRACT_HPP 1
 
+
 #ifndef X_COROUTINE_
 #error Do not taskpromiseabstract.hpp directly
 #endif
@@ -9,6 +10,7 @@
 
 #include <xclasshelpermacros.hpp>
 #include <private/mixns.hpp>
+#include <private/coromem_p.hpp>
 #include <coroutine>
 #include <vector>
 #include <xatomic.hpp>
@@ -69,6 +71,12 @@ namespace Coro::detail {
         }
 
         virtual ~TaskPromiseAbstract() = default;
+
+        void * operator new(std::size_t const size) noexcept
+        { return allocate(size); }
+
+        void operator delete(void * const ptr) noexcept
+        { deallocate(ptr);}
 
     protected:
         constexpr TaskPromiseAbstract() noexcept = default;

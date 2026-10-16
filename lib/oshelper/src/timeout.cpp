@@ -1,6 +1,5 @@
 #include <timeout.hpp>
 #include <xmemory.hpp>
-#include <cassert>
 
 #if defined(FREERTOS) || defined(USE_FREERTOS)
 #include <FreeRTOS.h>

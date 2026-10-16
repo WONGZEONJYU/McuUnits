@@ -7,12 +7,14 @@ CoroAwaiter::CoroAwaiter(uint32_t const timeout)
 {   }
 
 CoroAwaiter::CoroAwaiter(std::chrono::milliseconds const timeout)
-    :CoroAwaiter{static_cast<uint32_t>(timeout.count())}
+    :CoroAwaiter { static_cast<uint32_t>(timeout.count()) }
 {   }
 
 void CoroAwaiter::await_suspend(std::coroutine_handle<> const h) const noexcept {
-    if (m_waitTime_ <= 0) { h.resume(); return; }
-    EventLoop::postTimeEvent(m_waitTime_,[h]()noexcept{h.resume();});
+#define Resume [h]()noexcept { h.resume(); }
+    if (m_waitTime_ <= 0 || !EventLoop::postTimeEvent(m_waitTime_,Resume))
+    { h.resume(); }
+#undef Resume
 }
 
 CoroAwaiter::~CoroAwaiter() = default;

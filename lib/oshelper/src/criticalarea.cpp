@@ -45,7 +45,7 @@ void TaskCriticalArea::swap(TaskCriticalArea const & o) const noexcept {
 }
 
 ISRCriticalArea::ISRCriticalArea() noexcept
-:m_save_(taskENTER_CRITICAL_FROM_ISR())
+    :m_save_(taskENTER_CRITICAL_FROM_ISR())
 {   }
 
 ISRCriticalArea::~ISRCriticalArea()

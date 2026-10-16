@@ -4,6 +4,10 @@
 #include <functional>
 #include <xmemory.hpp>
 
+#if defined(FREERTOS) || defined(USE_FREERTOS)
+
+using event_fn = std::function<void()>;
+
 class EventLoopPrivate;
 
 class EventLoop final {
@@ -16,16 +20,18 @@ public:
     explicit EventLoop();
     ~EventLoop();
 
-    void post(std::function<void()> fn) noexcept;
-    void postTimeEvt(uint32_t,std::function<void()>) noexcept;
-    void postTimeEvt(std::chrono::milliseconds,std::function<void()>) noexcept;
-
-    static void postEvent(std::function<void()>) noexcept;
-    static void postTimeEvent(uint32_t,std::function<void()>) noexcept;
-    static void postTimeEvent(std::chrono::milliseconds,std::function<void()>) noexcept;
+    void post(event_fn fn) noexcept;
+    void postTimeEvt(uint32_t,event_fn) noexcept;
+    void postTimeEvt(std::chrono::milliseconds,event_fn) noexcept;
 
     void exec() noexcept;
     void quit() noexcept;
+
+    static bool postEvent(event_fn) noexcept;
+    static bool postTimeEvent(uint32_t,event_fn) noexcept;
+    static bool postTimeEvent(std::chrono::milliseconds,event_fn) noexcept;
 };
+
+#endif
 
 #endif

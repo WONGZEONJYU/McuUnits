@@ -24,6 +24,9 @@ namespace Coro {
             XCoroLazyTask<T> get_return_object() noexcept
             { return std::coroutine_handle<LazyTaskPromise>::from_promise(*this); }
 
+            static XCoroLazyTask<T> get_return_object_on_allocation_failure() noexcept
+            { configASSERT(0); return {}; }
+
             static constexpr auto initial_suspend() noexcept
             { return std::suspend_always {}; }
         };

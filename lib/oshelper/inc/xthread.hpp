@@ -21,8 +21,8 @@ public:
 
     template<typename ...Args>
     explicit XThreadDynamic(Args && ...args)
-    : XAbstractThread { XCallableHelper::createCallable(std::forward<Args>(args)...) }
-    {}
+        : XAbstractThread { XCallableHelper::createCallable(std::forward<Args>(args)...) }
+    {   }
 
     XThreadDynamic(XThreadDynamic && ) noexcept;
 

@@ -1,5 +1,5 @@
-#ifndef FCDETECTOR_TIMEOUT_HPP
-#define FCDETECTOR_TIMEOUT_HPP
+#ifndef TIMEOUT_HPP
+#define TIMEOUT_HPP
 
 #include <xclasshelpermacros.hpp>
 #include <xmemory.hpp>
