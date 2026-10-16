@@ -404,6 +404,9 @@ namespace XPrivate {
 template<typename Tp_, typename = XAllocator< std::decay_t< std::remove_cvref_t<Tp_> > > >
 class XTwoPhaseConstruction;
 
+template<typename Tp_, typename = XAllocator< std::decay_t< std::remove_cvref_t<Tp_> > > >
+class UniqueCopy;
+
 template<typename ...Args>
 using Parameter = std::tuple<Args...>;
 
@@ -510,17 +513,31 @@ public:
 
 protected:
     constexpr XTwoPhaseConstruction() = default;
-    template<typename ,typename > friend class XSingleton;
+    template<typename ,typename > friend class UniqueCopy;
 };
 
 using TwoPhaseConstruction [[maybe_unused]] = XTwoPhaseConstruction<void>;
 
-#define X_TWO_PHASE_CONSTRUCTION_CLASS \
-private: \
-    inline constexpr void checkFriendXTwoPhaseConstruction_() {} \
-    template<typename,typename > friend class XTwoPhaseConstruction; \
-    template<typename> friend struct XPrivate::Has_X_TwoPhaseConstruction_CLASS_Macro; \
-    template<typename ,typename > friend struct XPrivate::Has_construct_Func; \
+template<typename Tp_, typename Alloc_>
+class UniqueCopy : protected XTwoPhaseConstruction<Tp_,Alloc_> {
+    using Base = XTwoPhaseConstruction<Tp_,Alloc_>;
+public:
+    static Base::Object * instance() noexcept {
+        static auto const obj { Base::CreateUniquePtr() };
+        return obj.get();
+    }
+
+    static Base::Object & instanceRef() noexcept
+    { return *instance(); }
+};
+
+#define X_TWO_PHASE_CONSTRUCTION_CLASS                                                  \
+private:                                                                                \
+    inline constexpr void checkFriendXTwoPhaseConstruction_() {}                        \
+    template<typename,typename > friend class XTwoPhaseConstruction;                    \
+    template<typename,typename > friend class UniqueCopy;                               \
+    template<typename> friend struct XPrivate::Has_X_TwoPhaseConstruction_CLASS_Macro;  \
+    template<typename ,typename > friend struct XPrivate::Has_construct_Func;
 
 #undef STATIC_ASSERT_P
 
