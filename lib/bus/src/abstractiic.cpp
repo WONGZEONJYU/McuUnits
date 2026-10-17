@@ -1,5 +1,6 @@
 #include <abstractiic.hpp>
 #include <abstractgpio.hpp>
+#include <ranges>
 #include <xscopeguard.hpp>
 
 void AbstractIIC::start() const noexcept {
@@ -140,5 +141,7 @@ int64_t AbstractIIC::write(const void * const src , std::size_t const len, int64
 int64_t AbstractIIC::write(const void * const src , std::size_t const len , int64_t) const noexcept
 { return const_cast<AbstractIIC*>(this)->write(src,len,0); }
 
-void AbstractIIC::delay() const noexcept
-{ auto cnt { 5 }; while (--cnt){} }
+void AbstractIIC::delay() const noexcept {
+    auto volatile cnt { 5 };
+    while (cnt) { auto v{ cnt };--v;cnt = v; }
+}
