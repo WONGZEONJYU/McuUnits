@@ -18,8 +18,8 @@ namespace {
 
         Mutex mutable m_events_mtx_{},m_timeEvents_mtx_{};
         XDeque<event_fn> m_events_{};
-        XDeque<timeEvent_t> m_timeEvents_{};
-        XList<XAtomicInt> m_exits_{};
+        XDeque<timeEvent_t> m_delayEvents_{},m_readyEvents_{};
+        XDeque<XAtomicInt> m_exits_{};
         XAtomicInt m_ref_{1};
         void * m_ownershipThread_ { xTaskGetCurrentTaskHandle() };
 
@@ -53,13 +53,13 @@ namespace {
         void postTimeEvent(event_fn fn,uint32_t ms) noexcept {
             RefGuard g {this};
             std::unique_lock lk {m_timeEvents_mtx_};
-            m_timeEvents_.emplace_back(ms,std::move(fn));
+            m_delayEvents_.emplace_back(ms,std::move(fn));
         }
 
         void postTimeEvent(event_fn fn,std::chrono::milliseconds ms) noexcept {
             RefGuard g {this};
             std::unique_lock lk {m_timeEvents_mtx_};
-            m_timeEvents_.emplace_back(ms,std::move(fn));
+            m_delayEvents_.emplace_back(ms,std::move(fn));
         }
 
         void exec() noexcept {
@@ -101,21 +101,23 @@ namespace {
 
         void processTimeEvent() noexcept {
 
-            auto const timeOutEvent {
-                [this]() noexcept -> event_fn {
-                    std::unique_lock lk {m_timeEvents_mtx_};
-                    if (m_timeEvents_.empty()) { return {}; }
-                    auto evt{ std::move(m_timeEvents_.front()) };
-                    m_timeEvents_.pop_front();
-                    if (!evt.first) {
-                        m_timeEvents_.push_back(std::move(evt));
-                        return {};
-                    }
-                    return std::move(evt.second);
-                }()
-            };
+            [this]() noexcept {
+                decltype(m_delayEvents_) delayEvents{};
+                std::unique_lock lk {m_timeEvents_mtx_};
+                while (!m_exits_.front().loadAcquire() && !m_delayEvents_.empty()) {
+                    auto evt{ std::move(m_delayEvents_.front()) };
+                    m_delayEvents_.pop_front();
+                    evt.first ? m_readyEvents_.push_back(std::move(evt)) : delayEvents.push_back(std::move(evt));
+                }
+                if (delayEvents.empty()) { return; }
+                m_delayEvents_.insert(m_delayEvents_.cend(),delayEvents.cbegin(),delayEvents.cend());
+            }();
 
-            if (timeOutEvent) { timeOutEvent(); }
+            while (!m_exits_.front().loadAcquire() && !m_readyEvents_.empty()) {
+                auto [_,evt] { std::move(m_readyEvents_.front()) };
+                m_readyEvents_.pop_front();
+                evt();
+            }
         }
     };
 
