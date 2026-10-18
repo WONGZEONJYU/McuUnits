@@ -17,6 +17,8 @@
 #include <sstream>
 #include <string>
 #include <charconv>
+#include <queue>
+#include <stack>
 #include <xtypetraits.hpp>
 
 inline namespace XContainer {
@@ -396,6 +398,12 @@ inline namespace XContainer {
 
     template<typename Tp_>
     using XDeque = std::deque< Tp_, XAllocator< Tp_ > >;
+
+    template<typename Tp_,typename Container = XDeque<Tp_>,typename Compare = typename Container::value_type>
+    using XPriorityQueue = std::priority_queue< Tp_, Container, Compare >;
+
+    template<typename Tp_>
+    using XStack = std::stack< Tp_, XDeque< Tp_ > >;
 
     template<typename Key_>
     using XMultiset = std::multiset< Key_,std::less<Key_>,XAllocator<Key_> >;

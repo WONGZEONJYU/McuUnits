@@ -22,6 +22,7 @@ namespace {
         XDeque<XAtomicInt> m_exits_{};
         XAtomicInt m_ref_{1};
         void * m_ownershipThread_ { xTaskGetCurrentTaskHandle() };
+        bool m_inExec_{};
 
         struct RefGuard final {
             explicit RefGuard(EventImpl * const obj) noexcept :m_obj_{obj}
@@ -65,8 +66,10 @@ namespace {
         void exec() noexcept {
             configASSERT(xTaskGetCurrentTaskHandle() == m_ownershipThread_);
 
-            XScopeGuard const guard{[this]()noexcept{ m_exits_.emplace_front(); }
-                                ,[this]()noexcept{ m_exits_.pop_front();}
+            if (m_inExec_) { return; }
+
+            XScopeGuard const guard{[this]()noexcept{ m_exits_.emplace_front(); m_inExec_ = true;}
+                                ,[this]()noexcept{ m_exits_.pop_front(); m_inExec_ = {}; }
             };
 
             auto && exit{ std::as_const(m_exits_.front()) };
