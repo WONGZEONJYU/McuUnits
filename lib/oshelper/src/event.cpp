@@ -1,5 +1,4 @@
 #include <event.hpp>
-#include <cassert>
 #include <mutex.hpp>
 #include <xcontainer.hpp>
 #include <timeout.hpp>
@@ -113,7 +112,7 @@ namespace {
             return h;
         }
 
-        static void remove(EventDispatcher * const ev) noexcept {
+        static void erase(EventDispatcher * const ev) noexcept {
             TaskCriticalArea t{};
             if (!ev || ev->ownershipThread() != xTaskGetCurrentTaskHandle() || ev != getCurrent() || ev->deref() ) { return; }
             setCurrent({});
@@ -128,8 +127,9 @@ class EventLoopPrivate final {
 public:
     EventLoop * q_ptr{};
     EventDispatcher * m_eventDispatcher{};
-    bool m_inExec_{};
     XAtomicInt m_exits_{};
+    bool m_inExec_{};
+
     W_DECLARE_PUBLIC(EventLoop)
     EventLoopPrivate() = default;
     ~EventLoopPrivate() = default;
@@ -148,7 +148,7 @@ EventLoop::EventLoop()
 }
 
 EventLoop::~EventLoop()
-{ EventDispatcherTls::remove(d_func()->m_eventDispatcher); }
+{ EventDispatcherTls::erase(d_func()->m_eventDispatcher); }
 
 void EventLoop::exec() noexcept {
     W_D(EventLoop);
