@@ -14,7 +14,7 @@ namespace {
     using timeEvent_t = std::pair<ElapsedTimer, event_fn>;
 
     class EventDispatcher final {
-        Mutex mutable m_events_mtx_{},m_timeEvents_mtx_{};
+        Mutex mutable m_events_mtx_{};
         XDeque<event_fn> m_events_{};
         XList<timeEvent_t> m_delayEvents_{};
         XAtomicInt m_ref_{};
@@ -49,13 +49,13 @@ namespace {
 
         void postTimeEvent(event_fn fn,uint32_t ms) noexcept {
             RefGuard g {this};
-            std::unique_lock lk {m_timeEvents_mtx_};
+            std::unique_lock lk {m_events_mtx_};
             m_delayEvents_.emplace_back(ms,std::move(fn));
         }
 
         void postTimeEvent(event_fn fn,std::chrono::milliseconds ms) noexcept {
             RefGuard g {this};
-            std::unique_lock lk {m_timeEvents_mtx_};
+            std::unique_lock lk {m_events_mtx_};
             m_delayEvents_.emplace_back(ms,std::move(fn));
         }
 
@@ -84,7 +84,7 @@ namespace {
 
     private:
         void processTimeEvent() noexcept {
-            std::unique_lock lk {m_timeEvents_mtx_};
+            std::unique_lock lk {m_events_mtx_};
             for (auto it { m_delayEvents_.begin() };it != m_delayEvents_.end();) {
                 auto && evt { *it };
                 auto && [t,e] { evt };
