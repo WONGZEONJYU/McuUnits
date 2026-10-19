@@ -13,6 +13,8 @@ ElapsedTimer::ElapsedTimer(uint32_t const ms) noexcept:
     ElapsedTimer { std::chrono::milliseconds{ms} }
 {   }
 
+ElapsedTimer::~ElapsedTimer() = default;
+
 void ElapsedTimer::setTimeOut(uint32_t const ms) noexcept {
     m_waitTime_ = pdMS_TO_TICKS(ms);
     m_recordWaitTime_ = m_waitTime_;
@@ -34,6 +36,7 @@ bool ElapsedTimer::timeOut() noexcept {
 ElapsedTimer::operator bool() noexcept
 { return timeOut(); }
 
-ElapsedTimer::~ElapsedTimer() = default;
+TickType_t ElapsedTimer::remaining() const noexcept
+{ return m_waitTime_; }
 
 #endif

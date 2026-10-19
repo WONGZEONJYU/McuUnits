@@ -20,16 +20,12 @@ public:
     explicit EventLoop();
     ~EventLoop();
 
-    void post(event_fn fn) noexcept;
-    void postTimeEvt(uint32_t,event_fn) noexcept;
-    void postTimeEvt(std::chrono::milliseconds,event_fn) noexcept;
-
     void exec() noexcept;
     void quit() noexcept;
 
-    static bool postEvent(event_fn) noexcept;
-    static bool postTimeEvent(uint32_t,event_fn) noexcept;
-    static bool postTimeEvent(std::chrono::milliseconds,event_fn) noexcept;
+    static bool postEvent(event_fn,EventLoop * = {}) noexcept;
+    static bool postTimeEvent(uint32_t,event_fn,EventLoop * = {}) noexcept;
+    static bool postTimeEvent(std::chrono::milliseconds,event_fn,EventLoop * = {}) noexcept;
 };
 
 #endif

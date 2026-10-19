@@ -12,29 +12,26 @@
 
 namespace {
 
-    class EventImpl final {
+    using timeEvent_t = std::pair<ElapsedTimer, event_fn>;
 
-        using timeEvent_t = std::pair<ElapsedTimer, event_fn>;
-
+    class EventDispatcher final {
         Mutex mutable m_events_mtx_{},m_timeEvents_mtx_{};
         XDeque<event_fn> m_events_{};
-        XDeque<timeEvent_t> m_delayEvents_{};
-        XDeque<XAtomicInt> m_exits_{};
-        XAtomicInt m_ref_{1};
+        XList<timeEvent_t> m_delayEvents_{};
+        XAtomicInt m_ref_{};
         void * m_ownershipThread_ { xTaskGetCurrentTaskHandle() };
-        bool m_inExec_{};
 
         struct RefGuard final {
-            explicit RefGuard(EventImpl * const obj) noexcept :m_obj_{obj}
+            explicit RefGuard(EventDispatcher * const obj) noexcept :m_obj_{obj}
             { obj->ref();}
             ~RefGuard() noexcept { m_obj_->deref(); }
         private:
-            EventImpl * m_obj_{};
+            EventDispatcher * m_obj_{};
         };
 
     public:
-        explicit EventImpl() = default;
-        ~EventImpl() = default;
+        explicit EventDispatcher() = default;
+        ~EventDispatcher() = default;
 
         constexpr void * ownershipThread() const noexcept
         { return m_ownershipThread_; }
@@ -63,28 +60,10 @@ namespace {
             m_delayEvents_.emplace_back(ms,std::move(fn));
         }
 
-        void exec() noexcept {
-            configASSERT(xTaskGetCurrentTaskHandle() == m_ownershipThread_);
-
-            if (m_inExec_) { return; }
-
-            XScopeGuard const guard{[this]()noexcept{ m_exits_.emplace_front(); m_inExec_ = true;}
-                                ,[this]()noexcept{ m_exits_.pop_front(); m_inExec_ = {}; }
-            };
-
-            auto && exit{ std::as_const(m_exits_.front()) };
-            while (!exit.loadAcquire()) {
-                processTimeEvent();
-                processEvent();
-                XAbstractThread::yield();
-            }
-        }
-
-        void quit() noexcept
-        { m_exits_.front().storeRelease(true); }
-
-    private:
         void processEvent() noexcept {
+
+            processTimeEvent();
+
             auto const get {
                 [this]() noexcept -> event_fn {
                     std::unique_lock lk{m_events_mtx_};
@@ -95,55 +74,50 @@ namespace {
                 }
             };
 
-            while (!m_exits_.front().loadAcquire()) {
+            while (true) {
                 auto const event{ get() };
-                if (!event) { break; }
+                if (!event) { return; }
                 event();
             }
+
+            XAbstractThread::yield();
         }
 
+    private:
         void processTimeEvent() noexcept {
-            decltype(m_delayEvents_) delayEvents{};
             std::unique_lock lk {m_timeEvents_mtx_};
-            while (!m_exits_.front().loadAcquire() && !m_delayEvents_.empty()) {
-                auto evt{ std::move(m_delayEvents_.front()) };
-                m_delayEvents_.pop_front();
+            for (auto it { m_delayEvents_.begin() };it != m_delayEvents_.end();) {
+                auto && evt { *it };
                 auto && [t,e] { evt };
-                t ? m_events_.push_back(std::move(e)) : delayEvents.push_back(std::move(evt));
+                t ? m_events_.push_back(std::move(e)),it = m_delayEvents_.erase(it) : ++it;
             }
-            if (delayEvents.empty()) { return; }
-            m_delayEvents_.insert(m_delayEvents_.cend(),delayEvents.cbegin(),delayEvents.cend());
         }
     };
 
-    class EventImplTls final {
+    class EventDispatcherTls final {
 
         static void setCurrent(void * const v) noexcept
         { vTaskSetThreadLocalStoragePointer({},{},v); }
 
     public:
         static auto getCurrent() noexcept
-        { return static_cast<EventImpl*>(pvTaskGetThreadLocalStoragePointer({},{})); }
+        { return static_cast<EventDispatcher*>(pvTaskGetThreadLocalStoragePointer({},{})); }
 
-        static EventImpl * current() noexcept {
+        static EventDispatcher * current() noexcept {
             TaskCriticalArea t{};
             auto h{ getCurrent() };
             if (!h) {
-                h = makeUnique<EventImpl>().release();
+                h = makeUnique<EventDispatcher>().release();
                 if (h) { setCurrent(h); }
             }
             return h;
         }
 
-        static void remove(EventImpl * const ev) noexcept {
+        static void remove(EventDispatcher * const ev) noexcept {
             TaskCriticalArea t{};
-            if (!ev ||
-                ev->ownershipThread() != xTaskGetCurrentTaskHandle() ||
-                ev != getCurrent() ||
-                ev->deref()
-            ) { return; }
+            if (!ev || ev->ownershipThread() != xTaskGetCurrentTaskHandle() || ev != getCurrent() || ev->deref() ) { return; }
             setCurrent({});
-            XUniquePtr<EventImpl> const del { ev };
+            XUniquePtr<EventDispatcher> { ev };
         }
     };
 
@@ -153,7 +127,9 @@ class EventLoopPrivate final {
 
 public:
     EventLoop * q_ptr{};
-    EventImpl * current{};
+    EventDispatcher * m_eventDispatcher{};
+    bool m_inExec_{};
+    XAtomicInt m_exits_{};
     W_DECLARE_PUBLIC(EventLoop)
     EventLoopPrivate() = default;
     ~EventLoopPrivate() = default;
@@ -165,45 +141,50 @@ EventLoop::EventLoop()
     configASSERT(m_d_ptr_);
     m_d_ptr_->q_ptr = this;
     W_D(EventLoop);
-    auto const evt{ EventImplTls::current() };
+    auto const evt{ EventDispatcherTls::current() };
     configASSERT(evt);
-    d->current = evt;
+    evt->ref();
+    d->m_eventDispatcher = evt;
 }
 
 EventLoop::~EventLoop()
-{ EventImplTls::remove(d_func()->current); }
+{ EventDispatcherTls::remove(d_func()->m_eventDispatcher); }
 
-void EventLoop::post(event_fn fn) noexcept
-{ d_func()->current->postEvent(std::move(fn)); }
+void EventLoop::exec() noexcept {
+    W_D(EventLoop);
 
-void EventLoop::postTimeEvt(uint32_t const ms,event_fn fn) noexcept
-{ d_func()->current->postTimeEvent(std::move(fn),ms); }
+    if (d->m_inExec_) { return; }
 
-void EventLoop::postTimeEvt(std::chrono::milliseconds const ms,event_fn fn) noexcept
-{ d_func()->current->postTimeEvent(std::move(fn),ms); }
+    configASSERT(xTaskGetCurrentTaskHandle() == d->m_eventDispatcher->ownershipThread());
 
-void EventLoop::exec() noexcept
-{ d_func()->current->exec(); }
+    XScopeGuard const guard {
+        [d]()noexcept{ d->m_inExec_ = true; },
+        [d]()noexcept{ d->m_inExec_ = {}; }
+    };
+
+    while (!d->m_exits_.loadAcquire())
+    { d->m_eventDispatcher->processEvent(); }
+}
 
 void EventLoop::quit() noexcept
-{ d_func()->current->quit(); }
+{ d_func()->m_exits_.storeRelease(true); }
 
-bool EventLoop::postEvent(event_fn fn) noexcept {
-    auto const current{ EventImplTls::getCurrent() };
+bool EventLoop::postEvent(event_fn fn,EventLoop * const el) noexcept {
+    auto const current{ el ? el->m_d_ptr_->m_eventDispatcher : EventDispatcherTls::getCurrent() };
     if (!current) { return {}; }
     current->postEvent(std::move(fn));
     return true;
 }
 
-bool EventLoop::postTimeEvent(uint32_t const ms,event_fn fn) noexcept {
-    auto const current{ EventImplTls::getCurrent() };
+bool EventLoop::postTimeEvent(uint32_t const ms,event_fn fn ,EventLoop * const el) noexcept {
+    auto const current{ el ? el->m_d_ptr_->m_eventDispatcher : EventDispatcherTls::getCurrent() };
     if (!current) { return {}; }
     current->postTimeEvent(std::move(fn),ms);
     return true;
 }
 
-bool EventLoop::postTimeEvent(std::chrono::milliseconds const ms,event_fn fn) noexcept {
-    auto const current{ EventImplTls::getCurrent() };
+bool EventLoop::postTimeEvent(std::chrono::milliseconds const ms,event_fn fn,EventLoop * const el) noexcept {
+    auto const current{ el ? el->m_d_ptr_->m_eventDispatcher : EventDispatcherTls::getCurrent() };
     if (!current) { return {}; }
     current->postTimeEvent(std::move(fn),ms);
     return true;

@@ -14,12 +14,13 @@ class ElapsedTimer final {
 public:
     X_IMPLICIT ElapsedTimer(std::chrono::milliseconds) noexcept;
     X_IMPLICIT ElapsedTimer(uint32_t = 1000) noexcept;
+    ~ElapsedTimer();
     void setTimeOut(uint32_t) noexcept;
     void setTimeOut(std::chrono::milliseconds) noexcept;
     void restart() noexcept;
     [[nodiscard]] bool timeOut() noexcept;
     X_IMPLICIT operator bool() noexcept;
-    ~ElapsedTimer();
+    [[nodiscard]] TickType_t remaining() const noexcept;
 };
 
 #endif
