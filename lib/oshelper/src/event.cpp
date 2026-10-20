@@ -21,8 +21,7 @@ namespace {
         void * m_ownershipThread_ { xTaskGetCurrentTaskHandle() };
 
         struct RefGuard final {
-            explicit RefGuard(EventDispatcher * const obj) noexcept :m_obj_{obj}
-            { obj->ref();}
+            X_IMPLICIT RefGuard(auto const obj) noexcept :m_obj_{obj} { obj->ref();}
             ~RefGuard() noexcept { m_obj_->deref(); }
         private:
             EventDispatcher * m_obj_{};
@@ -38,47 +37,35 @@ namespace {
         void ref() noexcept
         { m_ref_.ref(); }
 
-        bool deref() noexcept
-        { return m_ref_.deref(); }
+        void deref() noexcept {
+            if (!m_ref_.deref())
+            { XUniquePtr<EventDispatcher>{this}; }
+        }
 
         void postEvent(event_fn fn) noexcept {
-            RefGuard g {this};
+            RefGuard const g {this};
             std::unique_lock lk {m_events_mtx_};
             m_events_.push_back(std::move(fn));
         }
 
         void postTimeEvent(event_fn fn,uint32_t ms) noexcept {
-            RefGuard g {this};
+            RefGuard const g {this};
             std::unique_lock lk {m_events_mtx_};
             m_delayEvents_.emplace_back(ms,std::move(fn));
         }
 
         void postTimeEvent(event_fn fn,std::chrono::milliseconds ms) noexcept {
-            RefGuard g {this};
+            RefGuard const g {this};
             std::unique_lock lk {m_events_mtx_};
             m_delayEvents_.emplace_back(ms,std::move(fn));
         }
 
         void processEvent() noexcept {
-
-            processTimeEvent();
-
-            auto const get {
-                [this]() noexcept -> event_fn {
-                    std::unique_lock lk{m_events_mtx_};
-                    if (m_events_.empty()) { return {}; }
-                    auto ret{ std::move(m_events_.front()) };
-                    m_events_.pop_front();
-                    return ret;
-                }
-            };
-
-            while (true) {
-                auto const event{ get() };
-                if (!event) { return; }
-                event();
+            {
+                RefGuard const g {this};
+                processTimeEvent();
+                processEventImpl();
             }
-
             XAbstractThread::yield();
         }
 
@@ -90,6 +77,19 @@ namespace {
                 auto && [t,e] { evt };
                 t ? m_events_.push_back(std::move(e)),it = m_delayEvents_.erase(it) : ++it;
             }
+        }
+
+        void processEventImpl() noexcept {
+            for (auto const get {
+                [this]() noexcept{
+                    std::unique_lock lk{m_events_mtx_};
+                    if (m_events_.empty()) { return event_fn{}; }
+                    auto ret{ std::move(m_events_.front()) };
+                    m_events_.pop_front();
+                    return ret;
+                }
+            };auto event{ get() };)
+            { event(); }
         }
     };
 
@@ -114,9 +114,9 @@ namespace {
 
         static void erase(EventDispatcher * const ev) noexcept {
             TaskCriticalArea t{};
-            if (!ev || ev->ownershipThread() != xTaskGetCurrentTaskHandle() || ev != getCurrent() || ev->deref() ) { return; }
+            if (!ev || ev->ownershipThread() != xTaskGetCurrentTaskHandle() || ev != getCurrent() ) { return; }
             setCurrent({});
-            XUniquePtr<EventDispatcher> { ev };
+            ev->deref();
         }
     };
 
@@ -127,8 +127,8 @@ class EventLoopPrivate final {
 public:
     EventLoop * q_ptr{};
     EventDispatcher * m_eventDispatcher{};
-    XAtomicInt m_exits_{};
-    bool m_inExec_{};
+    XAtomicInt m_exit{};
+    bool m_inExec{};
 
     W_DECLARE_PUBLIC(EventLoop)
     EventLoopPrivate() = default;
@@ -153,21 +153,21 @@ EventLoop::~EventLoop()
 void EventLoop::exec() noexcept {
     W_D(EventLoop);
 
-    if (d->m_inExec_) { return; }
+    if (d->m_inExec) { return; }
 
     configASSERT(xTaskGetCurrentTaskHandle() == d->m_eventDispatcher->ownershipThread());
 
     XScopeGuard const guard {
-        [d]()noexcept{ d->m_inExec_ = true; },
-        [d]()noexcept{ d->m_inExec_ = {}; }
+        [d]()noexcept{ d->m_inExec = true; d->m_exit.storeRelease({}); },
+        [d]()noexcept{ d->m_inExec = {}; }
     };
 
-    while (!d->m_exits_.loadAcquire())
+    while (!d->m_exit.loadAcquire())
     { d->m_eventDispatcher->processEvent(); }
 }
 
 void EventLoop::quit() noexcept
-{ d_func()->m_exits_.storeRelease(true); }
+{ d_func()->m_exit.storeRelease(true); }
 
 bool EventLoop::postEvent(event_fn fn,EventLoop * const el) noexcept {
     auto const current{ el ? el->m_d_ptr_->m_eventDispatcher : EventDispatcherTls::getCurrent() };
