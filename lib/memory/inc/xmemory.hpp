@@ -95,6 +95,7 @@ template<typename Tp_> struct XDeleter {
 };
 
 template<typename Tp_> struct XDeleter<Tp_[]> {
+
 private:
     mutable volatile uint32_t m_length {};
 

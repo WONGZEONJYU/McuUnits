@@ -22,7 +22,7 @@ namespace Coro::detail {
         { return m_awaitedCoroutine_ && m_awaitedCoroutine_.done(); }
 
         constexpr void await_suspend(std::coroutine_handle<> const h) noexcept {
-            if (!m_awaitedCoroutine_) { return; }
+            if (!m_awaitedCoroutine_) { return; } // 会导致参数h这个协程序永久阻塞
             m_awaitedCoroutine_.promise().addAwaitingCoroutine(h);
         }
 

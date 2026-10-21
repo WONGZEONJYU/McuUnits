@@ -47,7 +47,7 @@ namespace Coro {
         { return std::coroutine_handle<TaskPromise>::from_promise(*this); }
 
         inline XCoroTaskVoid TaskPromiseVoid::get_return_object_on_allocation_failure() noexcept
-        { configASSERT(0); return {}; }
+        { abort(); return {}; }
 
         template <typename T>
         concept TaskConvertible = requires(T val, TaskPromiseAbstract promise)

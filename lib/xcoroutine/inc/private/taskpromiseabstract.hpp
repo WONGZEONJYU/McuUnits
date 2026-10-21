@@ -17,10 +17,9 @@
 
 namespace Coro::detail {
 
-    using coroutine_handle_container = std::vector<std::coroutine_handle<>>;
-
     class TaskFinalSuspend final {
         coroutine_handle_container m_awaitingCoroutines_ {};
+
     public:
         X_IMPLICIT TaskFinalSuspend(coroutine_handle_container && awaitingCoroutines)
             : m_awaitingCoroutines_ { std::move(awaitingCoroutines) }

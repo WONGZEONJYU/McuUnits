@@ -25,7 +25,7 @@ namespace Coro {
             { return std::coroutine_handle<LazyTaskPromise>::from_promise(*this); }
 
             static XCoroLazyTask<T> get_return_object_on_allocation_failure() noexcept
-            { configASSERT(0); return {}; }
+            { std::abort(); return {}; }
 
             static constexpr auto initial_suspend() noexcept
             { return std::suspend_always {}; }
@@ -46,8 +46,10 @@ namespace Coro {
 
         ~XCoroLazyTask() override {
     #ifndef NDEBUG
-            if (this->m_coroutine_ && !this->m_coroutine_.done())
-            { assert("XCoroLazyTask destroyed before it was awaited!"); }
+            if (this->m_coroutine_ && !this->m_coroutine_.done()) {
+                // "XCoroLazyTask destroyed before it was awaited!"
+                while (true){ }
+            }
     #endif
         }
 
@@ -69,7 +71,7 @@ namespace Coro {
                 }
 
                 constexpr auto await_resume(){
-                    assert(this->m_awaitedCoroutine_);
+                    if (!this->m_awaitedCoroutine_) { abort(); }
                     if constexpr (std::is_void_v<T>) { this->m_awaitedCoroutine_.promise().result(); }
                     else { return std::move(this->m_awaitedCoroutine_.promise().result()); }
                 }

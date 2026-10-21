@@ -27,7 +27,7 @@ namespace Coro {
             { return std::coroutine_handle<TaskPromise>::from_promise(*this); }
 
             static XCoroTask<T> get_return_object_on_allocation_failure() noexcept
-            { configASSERT(0); return XCoroTask<T>{}; }
+            { abort(); return XCoroTask<T>{}; }
 
             void unhandled_exception()
             { m_value_ = std::current_exception(); }
@@ -42,11 +42,12 @@ namespace Coro {
             constexpr void return_value(U && value) noexcept
             { m_value_ = T(std::forward<U>(value)); }
 
-#define HAS_EXCEPTION() do { \
-        if (std::holds_alternative<std::exception_ptr>(m_value_)) { \
-            assert(std::get<std::exception_ptr>(m_value_)); \
-            std::rethrow_exception(std::get<std::exception_ptr>(m_value_)); \
-        } } while (false)
+#define HAS_EXCEPTION() do {                                                                    \
+                            if (std::holds_alternative<std::exception_ptr>(m_value_)) {         \
+                                assert(std::get<std::exception_ptr>(m_value_));                 \
+                                std::rethrow_exception(std::get<std::exception_ptr>(m_value_)); \
+                            }                                                                   \
+                        } while (false)
 
             constexpr T & result() &
             { HAS_EXCEPTION(); return std::get<T>(m_value_); }

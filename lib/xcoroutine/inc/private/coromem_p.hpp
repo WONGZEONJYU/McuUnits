@@ -11,8 +11,10 @@
 
 namespace Coro::detail {
 
-#undef non_os
-#define non_os                                                      \
+    using coroutine_handle_container = XVector<std::coroutine_handle<>>;
+
+#undef NON_OS_ALLOCATE_DEALLOCATE
+#define NON_OS_ALLOCATE_DEALLOCATE                                  \
     static constexpr auto allocate(std::size_t const n) noexcept    \
     { return malloc(n); }                                           \
                                                                     \
@@ -36,15 +38,15 @@ namespace Coro::detail {
         taskEXIT_CRITICAL();
     }
 #else
-    non_os
+    NON_OS_ALLOCATE_DEALLOCATE
 #endif
 
 #else
-    non_os
+    NON_OS_ALLOCATE_DEALLOCATE
 #endif
 
 }
 
-#undef non_os
+#undef NON_OS_ALLOCATE_DEALLOCATE
 
 #endif
