@@ -69,8 +69,6 @@ namespace Coro::detail {
             handle.destroy();
         }
 
-        virtual ~TaskPromiseAbstract() = default;
-
         void * operator new(std::size_t const size) noexcept
         { return allocate(size); }
 

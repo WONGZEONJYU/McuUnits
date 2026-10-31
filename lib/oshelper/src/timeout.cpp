@@ -13,8 +13,6 @@ ElapsedTimer::ElapsedTimer(uint32_t const ms) noexcept:
     ElapsedTimer { std::chrono::milliseconds{ms} }
 {   }
 
-ElapsedTimer::~ElapsedTimer() = default;
-
 void ElapsedTimer::setTimeOut(uint32_t const ms) noexcept {
     m_waitTime_ = pdMS_TO_TICKS(ms);
     m_recordWaitTime_ = m_waitTime_;
@@ -28,12 +26,13 @@ void ElapsedTimer::restart() noexcept {
     m_waitTime_ = m_recordWaitTime_;
 }
 
-bool ElapsedTimer::timeOut() noexcept {
-    return xTaskCheckForTimeOut(std::addressof(m_timeOut_),
-        std::addressof(m_waitTime_));
+bool ElapsedTimer::timeOut() const noexcept {
+    auto const self { const_cast<ElapsedTimer*>(this) };
+    return xTaskCheckForTimeOut(std::addressof(self->m_timeOut_),
+        std::addressof(self->m_waitTime_));
 }
 
-ElapsedTimer::operator bool() noexcept
+ElapsedTimer::operator bool() const noexcept
 { return timeOut(); }
 
 TickType_t ElapsedTimer::remaining() const noexcept

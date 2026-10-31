@@ -41,6 +41,9 @@ namespace Coro {
 
     using XCoroTaskVoid = XCoroTask<>;
 
+    static_assert(std::is_nothrow_move_constructible_v<XCoroTask<>>,"XCoroTask<> must support nothrow move construction!");
+    static_assert(std::is_nothrow_move_assignable_v<XCoroTask<>>,"XCoroTask<> must support nothrow move assignment!");
+
     namespace detail {
 
         inline XCoroTaskVoid TaskPromiseVoid::get_return_object() noexcept

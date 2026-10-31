@@ -57,7 +57,6 @@ namespace Coro {
 
 #undef HAS_EXCEPTION
 
-            ~TaskPromise() override = default;
         };
 
         template<>
@@ -75,8 +74,6 @@ namespace Coro {
 
             void result() const
             { if (m_exception_) { std::rethrow_exception(m_exception_); } }
-
-            ~TaskPromise() override = default;
         };
 
         using TaskPromiseVoid = TaskPromise<void>;

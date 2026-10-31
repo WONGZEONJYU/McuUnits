@@ -381,50 +381,98 @@ inline namespace XContainer {
         return x.m_index_ <=> y.m_index_;
     }
 
-    template<typename Tp_>
-    using XVector = std::vector< Tp_, XAllocator< Tp_ > >;
+    template<typename Tp_,typename Alloc_ = XAllocator< Tp_ >>
+    using XVector = std::vector< Tp_, Alloc_>;
 
-    using XVectorBool = std::vector<bool,XAllocator< bool >>;
+    template<typename Alloc_ = XAllocator< bool >>
+    using XVectorBool = std::vector<bool,Alloc_>;
 
     using XUByteArray = XVector<uint8_t>;
 
     using XByteArray = XVector<char>;
 
-    template<typename Tp_>
-    using XList = std::list< Tp_, XAllocator< Tp_ > >;
+    template<typename Tp_,typename Alloc_ = XAllocator< Tp_ >>
+    using XList = std::list< Tp_, Alloc_ >;
 
-    template<typename Tp_>
-    using XForwardList = std::forward_list<Tp_, XAllocator< Tp_ > >;
+    template<typename Tp_,typename Alloc_ = XAllocator< Tp_ >>
+    using XForwardList = std::forward_list<Tp_,Alloc_ >;
 
-    template<typename Tp_>
-    using XDeque = std::deque< Tp_, XAllocator< Tp_ > >;
+    template<typename Tp_,typename Alloc_ = XAllocator< Tp_ >>
+    using XDeque = std::deque< Tp_, Alloc_ >;
 
-    template<typename Tp_,typename Container = XDeque<Tp_>,typename Compare = typename Container::value_type>
+    template<
+        typename Tp_,
+        typename Container = XDeque<Tp_>,
+        typename Compare = typename Container::value_type
+    >
     using XPriorityQueue = std::priority_queue< Tp_, Container, Compare >;
 
-    template<typename Tp_>
-    using XStack = std::stack< Tp_, XDeque< Tp_ > >;
+    template<typename Tp_,typename Sequence_ = XDeque< Tp_ > >
+    using XStack = std::stack< Tp_,Sequence_ >;
 
-    template<typename Key_>
-    using XMultiset = std::multiset< Key_,std::less<Key_>,XAllocator<Key_> >;
+    template<
+        typename Key_,
+        typename Tp_,
+        typename Compare_ = std::less<Key_>,
+        typename Alloc_ = XAllocator<std::pair<const Key_, Tp_>>
+    >
+    using XMap = std::map< Key_,Tp_,Compare_, Alloc_ >;
 
-    template<typename Key_,typename Tp_>
-    using XMap = std::map< Key_,Tp_,std::less< Key_ >, XAllocator< std::pair<const Key_, Tp_> > >;
+    template <
+        typename Key_,
+        typename Tp_,
+        typename Compare_ = std::less<Key_>,
+        typename Alloc_ = XAllocator<std::pair<const Key_, Tp_>>
+    >
+    using XMultimap = std::multimap<Key_, Tp_, Compare_, Alloc_>;
 
-    template<typename Key_,typename Tp_>
-    using XUnordered_map = std::unordered_map< Key_,Tp_,std::hash< Key_ >,std::equal_to< Key_ >, XAllocator< std::pair< const Key_, Tp_ > > >;
+    template<
+        typename Key_,
+        typename Tp_,
+        typename Hash_ = std::hash< Key_ > ,
+        typename Pred_ = std::equal_to<Key_>,
+        typename Alloc_ = XAllocator< std::pair< const Key_, Tp_ > >
+    >
+    using XUnorderedMap = std::unordered_map< Key_,Tp_,Hash_,Pred_, Alloc_ >;
 
-    template<typename Key_,typename Tp_>
-    using XUnordered_multimap = std::unordered_multimap<Key_,Tp_,std::hash< Key_ >,std::equal_to< Key_ > , XAllocator< std::pair< const Key_, Tp_ > > >;
+    template<
+        typename Key_,
+        typename Tp_,
+        typename Hash_ = std::hash< Key_ > ,
+        typename Pred_ = std::equal_to<Key_>,
+        typename Alloc_ = XAllocator< std::pair< const Key_, Tp_ > >
+    >
+    using XUnorderedMultimap = std::unordered_multimap<Key_,Tp_,Hash_,Pred_ , Alloc_>;
 
-    template<typename Key_>
-    using XUnordered_set = std::unordered_set< Key_,std::hash< Key_ >,std::equal_to< Key_ >,XAllocator< Key_ > >;
+    template<
+        typename Key_,
+        typename Compare_ = std::less<Key_>,
+        typename Alloc_ = XAllocator<Key_>
+    >
+    using XSet = std::set<Key_,Compare_,Alloc_>;
 
-    template<typename Key_>
-    using XUnordered_multiset = std::unordered_multiset< Key_ ,std::hash<Key_>,std::equal_to< Key_ >,XAllocator< Key_ > >;
+    template<
+        typename Key_,
+        typename Compare_ = std::less<Key_> ,
+        typename Alloc_ = XAllocator<Key_>
+    >
+    using XMultiset = std::multiset< Key_,Compare_, Alloc_>;
 
-    template<typename Key_>
-    using XSet = std::set<Key_,std::less<Key_>,XAllocator<Key_>>;
+    template<
+        typename Key_,
+        typename Hash_ = std::hash< Key_ >,
+        typename Pred_ = std::equal_to< Key_ >,
+        typename Alloc_ = XAllocator< Key_ >
+    >
+    using XUnorderedSet = std::unordered_set< Key_,Hash_,Pred_,Alloc_>;
+
+    template<
+        typename Key_,
+        typename Hash_ = std::hash<Key_>,
+        typename Pred_ = std::equal_to< Key_ >,
+        typename Alloc_ = XAllocator< Key_ >
+    >
+    using XUnorderedMultiset = std::unordered_multiset< Key_ ,Hash_,Pred_,Alloc_>;
 
     using XString = std::basic_string<char,std::char_traits<char>,XAllocator<char>>;
 

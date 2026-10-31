@@ -48,7 +48,7 @@ namespace Coro::detail {
         constexpr XCoroTaskAbstract & operator=(XCoroTaskAbstract && o) noexcept
         { XCoroTaskAbstract { std::move(o) }.swap(*this); return *this; }
 
-        virtual ~XCoroTaskAbstract()
+        virtual ~XCoroTaskAbstract() noexcept
         { if (m_coroutine_) { m_coroutine_.promise().derefCoroutine(); } }
 
         [[nodiscard]] constexpr bool isReady() const noexcept

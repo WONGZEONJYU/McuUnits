@@ -44,7 +44,7 @@ namespace Coro {
         using promise_type = detail::LazyTaskPromise<T>;
         using value_type = T;
 
-        ~XCoroLazyTask() override {
+        ~XCoroLazyTask() noexcept override {
     #ifndef NDEBUG
             if (this->m_coroutine_ && !this->m_coroutine_.done()) {
                 // "XCoroLazyTask destroyed before it was awaited!"
@@ -99,6 +99,8 @@ namespace Coro {
     };
 
     using XCoroLazyTaskVoid = XCoroLazyTask<>;
+    static_assert(std::is_nothrow_move_constructible_v<XCoroLazyTask<>>,"XCoroLazyTask<> must support nothrow move construction!");
+    static_assert(std::is_nothrow_move_assignable_v<XCoroLazyTask<>>,"XCoroLazyTask<> must support nothrow move assignment!");
 
 }
 
