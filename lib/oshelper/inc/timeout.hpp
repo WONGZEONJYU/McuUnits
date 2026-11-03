@@ -8,15 +8,16 @@
 #if defined(FREERTOS) || defined(USE_FREERTOS)
 
 class ElapsedTimer final {
-    TimeOut_t m_timeOut_{};
-    TickType_t m_waitTime_{},m_recordWaitTime_{};
+    mutable TimeOut_t m_timeOut_{};
+    mutable TickType_t m_waitTime_{};
+    TickType_t m_recordWaitTime_{};
 
 public:
     X_IMPLICIT ElapsedTimer(std::chrono::milliseconds) noexcept;
     X_IMPLICIT ElapsedTimer(uint32_t = 1000) noexcept;
     void setTimeOut(uint32_t) noexcept;
     void setTimeOut(std::chrono::milliseconds) noexcept;
-    void restart() noexcept;
+    void restart() const noexcept;
     [[nodiscard]] bool timeOut() const noexcept;
     X_IMPLICIT operator bool() const noexcept;
     [[nodiscard]] TickType_t remaining() const noexcept;
