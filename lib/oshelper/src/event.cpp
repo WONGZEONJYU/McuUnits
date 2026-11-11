@@ -11,9 +11,7 @@
 
 namespace {
 
-    using timeEvent_t [[maybe_unused]] = std::pair<ElapsedTimer, event_fn>;
-
-    struct [[maybe_unused]] ElapsedTimerLess {
+    struct ElapsedTimerLess {
         constexpr bool operator()(ElapsedTimer const & lhs,ElapsedTimer const & rhs) const noexcept
         { return lhs.remaining() < rhs.remaining(); }
     };
@@ -21,7 +19,6 @@ namespace {
     class EventDispatcher final {
         Mutex mutable m_events_mtx_{};
         XDeque<event_fn> m_events_{};
-        //XList<timeEvent_t> m_delayEvents_{};
         XMultimap<ElapsedTimer,event_fn,ElapsedTimerLess> m_delayEvents_{};
         XAtomicInt m_ref_{};
         void * m_ownershipThread_ { xTaskGetCurrentTaskHandle() };
@@ -57,14 +54,12 @@ namespace {
         void postTimeEvent(event_fn fn,uint32_t ms) noexcept {
             RefGuard const g {this};
             std::unique_lock lk {m_events_mtx_};
-            //m_delayEvents_.emplace_back(ms,std::move(fn));
             m_delayEvents_.emplace(ms,std::move(fn));
         }
 
         void postTimeEvent(event_fn fn,std::chrono::milliseconds ms) noexcept {
             RefGuard const g {this};
             std::unique_lock lk {m_events_mtx_};
-            //m_delayEvents_.emplace_back(ms,std::move(fn));
             m_delayEvents_.emplace(ms,std::move(fn));
         }
 
