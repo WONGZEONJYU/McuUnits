@@ -49,6 +49,7 @@ void ButtonPrivate::init_(uint16_t const doubleClickTime,
 
 void ButtonPrivate::exec_() {
     if (!m_getPin_){ return; }
+
     if (m_keyStep_ > 0U || m_keyRepeat_ > 0U) { ++m_keyTicks_; }
 
     switch (m_keyStep_) {
@@ -56,7 +57,7 @@ void ButtonPrivate::exec_() {
             if ( m_getPin_() == m_level_) {
                 if (++m_debounce_ >= m_debounceTime_ ) {
                     m_debounce_ = {};
-                    if ( m_getPin_() == m_level_ ){ ++m_keyStep_; }
+                    if ( m_getPin_() == m_level_ ) { ++m_keyStep_; }
                 }
             } else { m_debounce_ = {}; }
             break;
@@ -65,7 +66,8 @@ void ButtonPrivate::exec_() {
             if ( m_getPin_() == m_level_ && !m_reuse_ && m_keyTicks_ >= m_longClickTime_ ) { /*超时执行长按动作--动作时长2秒*/
                 m_reuse_ = true;
                 q_func()->longClickedSignal(ButtonMode::LongClicked,m_data_);
-            }else if (m_getPin_() != m_level_){
+            }
+            else if (m_getPin_() != m_level_) {
                 if (m_reuse_) { /*已经执行长按动作*/
                     m_keyTicks_ = {};
                     m_keyRepeat_ = {};
@@ -77,37 +79,43 @@ void ButtonPrivate::exec_() {
                     if (!m_keyRepeat_){ m_lastTime_ = m_keyTicks_; }
                     ++m_keyRepeat_;
                 }
-            }else if( m_getPin_() == m_level_ && m_reuse_ ){
-                q_func()->longPressHoldSignal(ButtonMode::LongPressHold,m_data_);
-            }else {}
+            }
+            else if( m_getPin_() == m_level_ && m_reuse_ )
+            { q_func()->longPressHoldSignal(ButtonMode::LongPressHold,m_data_); }
+            else {}
             break;
         }
         default:
             break;
     }
 
-    constexpr auto f { [](uint16_t const OldTime,uint16_t const NewTime ) noexcept -> uint16_t {
-        return NewTime < OldTime ? NewTime + static_cast<uint16_t>(0xFFFF) - OldTime : NewTime - OldTime;
-    }};
+    auto constexpr timeCalc {
+        [](uint16_t const OldTime,uint16_t const NewTime ) noexcept -> uint16_t {
+            return NewTime < OldTime ? NewTime + std::numeric_limits<uint16_t>::max() - OldTime : NewTime - OldTime;
+        }
+    };
 
-    auto const clearValue { [this]()noexcept{
-        m_keyRepeat_ = {};
-        m_keyTicks_ = {};
-        m_lastTime_ = {};
-    } };
+    auto const clearValue {
+        [this]()noexcept{
+            m_keyRepeat_ = {};
+            m_keyTicks_ = {};
+            m_lastTime_ = {};
+        }
+    };
 
-    if (auto const calcResult{ f(m_lastTime_, m_keyTicks_) }
+    if (auto const calcResult{ timeCalc(m_lastTime_, m_keyTicks_) }
         ; calcResult > m_doubleClickTime_ && m_keyRepeat_ > 0 )
     {
         /* 短按处理*/
         clearValue();
         q_func()->shortClickedSignal(ButtonMode::ShortClicked,m_data_);
-    }else if ( calcResult < m_doubleClickTime_ && m_keyRepeat_ == m_doubleClickNum_ ){
+    }
+    else if ( calcResult < m_doubleClickTime_ && m_keyRepeat_ == m_doubleClickNum_ ){
         /*双击处理*/
         clearValue();
         q_func()->doubleClickedSignal(ButtonMode::DoubleClicked,m_data_);
-    } else{
     }
+    else{ }
 }
 
 XSharedPtr<Button> Button::create(levelDetectFunc && f,bool const level
