@@ -7,19 +7,11 @@ class ButtonCore;
 class ButtonCorePrivate;
 class Button;
 
-class ButtonCoreData {
-protected:
-    constexpr ButtonCoreData() = default;
-public:
-    virtual ~ButtonCoreData() = default;
-    ButtonCore * q_ptr{};
-};
-
 class ButtonCore final : XTwoPhaseConstruction<ButtonCore> {
     W_DISABLE_COPY_MOVE(ButtonCore)
     W_DECLARE_PRIVATE_D(m_d_ptr_,ButtonCore)
     X_TWO_PHASE_CONSTRUCTION_CLASS
-    XUniquePtr<ButtonCoreData> m_d_ptr_{};
+    XUniquePtr<ButtonCorePrivate> m_d_ptr_;
 
 public:
     static ButtonCore * handle() noexcept;

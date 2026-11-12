@@ -1,5 +1,22 @@
-#include "buttoncore_p.hpp"
+#include <buttoncore.hpp>
+#include <xcontainer.hpp>
+#include <button.hpp>
 #include <ranges>
+
+class ButtonCorePrivate final {
+    W_DECLARE_PUBLIC(ButtonCore)
+    ButtonCore * q_ptr{};
+    XUnorderedMap<void *,XSharedPtr<Button>> m_buttons{};
+
+public:
+    constexpr explicit ButtonCorePrivate(ButtonCore * const o)
+    { q_ptr = o; }
+    ~ButtonCorePrivate() = default;
+
+    void addButton(XSharedPtr<Button> const &) noexcept;
+    void removeButton(void *) noexcept;
+    void exec() const noexcept;
+};
 
 void ButtonCorePrivate::addButton(XSharedPtr<Button> const & b) noexcept
 { CHECK_EMPTY(b,return);m_buttons[b.get()] = b; }
