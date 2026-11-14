@@ -3,6 +3,7 @@
 
 #include <optional>
 #include <memory>
+#include <xclasshelpermacros.hpp>
 
 enum class GPIOMode : int {
     INPUT,OUTPUT,ALTERNATE,ANALOG,UNKNOWN = -1
@@ -43,7 +44,7 @@ public:
     virtual void setSpeed(GPIOSpeed) const;
     [[nodiscard]] virtual GPIOSpeed speed() const;
     void setGPIO(void *,uint32_t) noexcept;
-    operator bool() const noexcept;
+    X_IMPLICIT operator bool() const noexcept;
     bool operator!() const noexcept;
     void swap(AbstractGPIO &) noexcept;
 
