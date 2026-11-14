@@ -30,7 +30,7 @@ protected:
     uint32_t m_pin_{};
 
 public:
-    virtual ~AbstractGPIO() = default;
+    virtual ~AbstractGPIO() noexcept = default;
     virtual void set() const = 0;
     virtual void reset() const = 0;
     virtual void toggle() const = 0;
